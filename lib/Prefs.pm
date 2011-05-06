@@ -95,7 +95,6 @@ sub get {
 		return $self->{settings}->{$key};
 	}
 	else {
-		print "fuckkk\n";
 		return defined $self->{default_settings}->{$key} ? $self->{default_settings}->{$key} : -1;
 	}
 }

@@ -66,8 +66,7 @@ sub get {
 sub check_existing {
 	my ($self, $host, $port) = @_;
 	foreach (@{$self->{favorites}}) {
-		print "fuck\n";
-		return 1 if $_->{host} eq $host && $_->port eq $port;
+		return 1 if $_->{host} eq $host && $_->{port} eq $port;
 	}
 	return 0;
 }

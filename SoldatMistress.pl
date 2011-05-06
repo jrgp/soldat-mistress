@@ -233,7 +233,9 @@ $con_btn->signal_connect('button-press-event' => sub {
 		}
 	);
 	if ($cur != 0) {
-		unless (defined $cur->{settings} and $cur->check_connected) {
+		unless (defined $cur->{settings} && $cur->check_connected && !$favs->check_existing(
+			$cur->{settings}->{host}, $cur->{settings}->{port}
+		)) {
 			$add_2_favs->set_sensitive(FALSE);
 		}
 	}
