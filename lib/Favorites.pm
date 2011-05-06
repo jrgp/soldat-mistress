@@ -48,18 +48,18 @@ sub add {
 sub get {
 	my $self = shift;
 	my %seen;
-	my $res;
+	my @res;
 	foreach (@{$self->{favorites}}) {
 		unless (defined $seen{$_->{host}.$_->{port}}) {
 			$seen{$_->{host}.$_->{port}} = 1;
-			push @{$res}, {
+			push @res, {
 				host => $_->{host},
 				port => $_->{port},
 				pw => $_->{pw}
 			};
 		}
 	}
-	$res;
+	return @res;
 }
 
 # We have this server in our favorites?
@@ -110,7 +110,7 @@ sub save {
 	my $self = shift;
 	my $handle;
 	return 0 unless open($handle, '>'.$self->{filename});
-	print $handle $_->{host}.':'.$_->{port}.':'.$_->{pw}."\n" foreach (@{$self->get()});
+	print $handle $_->{host}.':'.$_->{port}.':'.$_->{pw}."\n" foreach ($self->get());
 	close $handle;
 	1;
 }

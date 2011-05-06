@@ -141,7 +141,7 @@ sub connect_favs {
 	my $connected = 0;
 
 	# Each of the favorite servers
-	foreach (@{$favs->get()}) {
+	foreach ($favs->get()) {
 
 		# Skip this server if we already have a tab in it
 		my $do_this = 1;
@@ -191,7 +191,7 @@ $con_btn->signal_connect('button-press-event' => sub {
 	$fav_menu->append($manage_favs);
 	unless ($favs->num == 0) {
 		$fav_menu->add(Gtk2::SeparatorMenuItem->new);
-		foreach (@{$favs->get()}) {
+		foreach ($favs->get()) {
 			my $fsm = Gtk2::MenuItem->new($_->{host}.':'.$_->{port});
 			$fsm->signal_connect('activate' => sub {
 				my ($host, $port, $pw) = @{$_[1]};

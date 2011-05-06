@@ -203,7 +203,7 @@ sub get_favs_page {
 	$fav_add_hbox->show_all();
 	$vbox->pack_end($fav_add_frame, FALSE, FALSE, 0);
 	$vbox->show_all;
-	foreach (@{$self->{favs}->get()}) {
+	foreach ($self->{favs}->get()) {
 		push @{$favs_list->{data}}, [
 			$_->{host},
 			$_->{port},
@@ -264,7 +264,7 @@ sub get_favs_page {
 		$fav_add_pw->set_text('');
 		$self->{favs}->add($a_host, $a_port, $a_pw);
 		@{$favs_list->{data}} = ();
-		foreach (@{$self->{favs}->get()}) {
+		foreach ($self->{favs}->get()) {
 			push @{$favs_list->{data}}, [
 				$_->{host},
 				$_->{port},
