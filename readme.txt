@@ -25,10 +25,10 @@ Caveats:
 ===============================================
 
 Install base gtk2 stuff on ubuntu/debian with:
-  sudo apt-get install libgtk2-perl libgtk2-notify-perl
+  sudo apt-get install libgtk2-perl libgtk2-notify-perl libpango-perl libglib-perl
 
 On centos and probably also fedora with:
-  sudo yum install perl-Gtk2 perl-Gtk2-Notify
+  sudo yum install perl-Gtk2 perl-Gtk2-Notify perl-Pango perl-Glib
 
 On freebsd and macports, install or compile this port:
   p5-Gtk2
