@@ -150,6 +150,19 @@ sub kill_server {
 	1;
 }
 
+# Get current server
+sub get_current_server {
+	return 0 unless $server_notebook->get_n_pages() > 0;
+	my $cur = $server_notebook->get_current_page();
+	for (my $i = 0; $i < scalar @nervs; $i++) {
+		my $ts = $server_notebook->page_num($nervs[$i]->get_gui());
+		if ($cur == $ts) {
+			return $nervs[$i];
+		}
+	}
+	return 0;
+}
+
 # Connect to the servers in our favorites
 sub connect_favs {
 
@@ -205,6 +218,29 @@ $con_btn->signal_connect('button-press-event' => sub {
 		$prefs->show_dialog('favs');
 	});
 	$fav_menu->append($manage_favs);
+	my $add_2_favs = Gtk2::MenuItem->new('Add current tab to favorites');
+	my $cur = get_current_server;
+	$add_2_favs->signal_connect(
+		'activate' => sub {
+			if ($cur != 0 && defined $cur->{settings} && $cur->check_connected) {
+				$favs->add(
+					$cur->{settings}->{host},
+					$cur->{settings}->{port},
+					$cur->{settings}->{pw}
+				);
+				$favs->save;
+			}
+		}
+	);
+	if ($cur != 0) {
+		unless (defined $cur->{settings} and $cur->check_connected) {
+			$add_2_favs->set_sensitive(FALSE);
+		}
+	}
+	else {
+		$add_2_favs->set_sensitive(FALSE);
+	}
+	$fav_menu->append($add_2_favs);
 	unless ($favs->num == 0) {
 		$fav_menu->add(Gtk2::SeparatorMenuItem->new);
 		foreach ($favs->get()) {

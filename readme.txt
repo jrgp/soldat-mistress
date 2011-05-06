@@ -33,3 +33,5 @@ On centos and probably also fedora with:
 On freebsd and macports, install or compile this port:
   p5-Gtk2
 
+If gtk2::notify was not installed via a package above, install it from cpan:
+  Gtk2::Notify

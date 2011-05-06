@@ -226,7 +226,7 @@ sub get_favs_page {
 		$kill_item->signal_connect('activate' => sub {
 			$self->{favs}->remove($host, $port);
 			@{$widget->{data}} = ();
-			foreach (@{$self->{favs}->get()}) {
+			foreach ($self->{favs}->get()) {
 				push @{$widget->{data}}, [
 					$_->{host},
 					$_->{port},
