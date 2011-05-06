@@ -49,7 +49,7 @@ my $tabs_hbox = Gtk2::HBox->new;
 my $server_notebook = Gtk2::Notebook->new;
 my $add_btn = Gtk2::Button->new('New Tab');
 my $rem_btn = Gtk2::Button->new('Kill Tab');
-my $con_btn = Gtk2::Button->new('Connect Favorites');
+my $con_btn = Gtk2::Button->new('Favorites');
 my $conf_btn = Gtk2::Button->new_from_stock('gtk-preferences');
 my $tray_icon = Gtk2::StatusIcon->new_from_file('gfx/icon_x.png');
 $server_notebook->set_scrollable(TRUE);
