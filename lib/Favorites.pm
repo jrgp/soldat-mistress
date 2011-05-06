@@ -23,7 +23,7 @@ sub new {
 	my ($class, $filename) = @_;
 	my $self = {};
 	bless ($self, $class);
-	$self->{favorites} = ();
+	$self->{favorites} = [];
 	$self->{filename} = $filename;
 	$self;
 }
@@ -66,6 +66,7 @@ sub get {
 sub check_existing {
 	my ($self, $host, $port) = @_;
 	foreach (@{$self->{favorites}}) {
+		print "fuck\n";
 		return 1 if $_->{host} eq $host && $_->port eq $port;
 	}
 	return 0;
@@ -119,7 +120,7 @@ sub save {
 sub load {
 	my $self = shift;
 	my $handle;
-	return 0 unless open($handle, 'favs.txt');
+	return 0 unless open($handle, $self->{filename});
 	splice @{$self->{favorites}};
 	while (<$handle>) {
 		if (m/^(?!\#)([^:]+):(\d+):([^\$]+)$/) {

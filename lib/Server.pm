@@ -147,13 +147,15 @@ sub watch_callback {
 			}
 			elsif ($self->{version} eq '' && $self->{s_line} =~ m/^Server Version: ([0-9\.]+)/){
 				$self->{version} = $1;
-	#			$self->{widgets}->{tab_label}->set_text($self->{widgets}->{tab_label}->get_text()." ($1)");
 			}
 			elsif ($self->{s_line} =~ m/^Max players is ([0-9]+)/) {
 				$self->{stats}->{max_players} = '/'.$1;
 			}
 			else {
 				$self->console_add($self->{s_line});
+			}
+			if ($self->{s_line} =~ m/^\[(.+)\] ([^\$]+)$/) {
+				$self->on_player_speak($1, $2);
 			}
 			$self->{s_line} = "";
 		}
@@ -902,6 +904,24 @@ sub console_add {
 	my @time = localtime(time);
 	$self->{widgets}->{server_log_buff}->insert(
 		$self->{widgets}->{server_log_buff}->get_end_iter, "[$time[2]:$time[1]:$time[0]] ".$line."\n");
+}
+
+# When a player speaks, do something
+sub on_player_speak {
+	my ($self, $player, $msg) = @_;
+	$player =~ s/^\s+|\s+$//g;
+	$msg =~ s/^\s+|\s+$//g;
+	if ($msg =~ m/^\!(\S+) ?([^\$]+)?$/) {
+		if ($1 eq 'admin' and $self->{prefs}->get('admin.notify') == 1) {
+			my $notif = Gtk2::Notify->new_with_status_icon(
+				"$player in ".$self->{settings}->{host}.':'.$self->{settings}->{port},
+				"$player called !admin".(defined $2 && length($2) > 0 ? ": $2" : ''),
+				'gfx/icon_x.png',
+				$self->{widgets}->{tray_icon}
+			);
+			$notif->show;
+		}
+	}
 }
 
 

@@ -24,6 +24,7 @@ use strict;
 use Gtk2 -init;
 use Glib qw(TRUE FALSE);
 use Gtk2::Gdk::Keysyms;
+use Gtk2::Notify qw(-init SoldatMistress!);
 
 # Get all pithy, er, pathy
 use File::Basename;
@@ -32,6 +33,18 @@ use File::Basename;
 use lib dirname(__FILE__).'/lib/';
 my $here = dirname($0);
 chdir $here unless $here eq '.';
+
+# paranoid motha fuckas we are
+umask(0077);
+
+# Our local folder for fun shit
+my $home_dir_folder = $ENV{HOME}.'/.soldatmistress/';
+my $home_dir_ok = 1;
+unless (-d $home_dir_folder) {
+	unless (mkdir ($home_dir_folder)) {
+		$home_dir_ok = 0
+	};
+}
 
 # Load our custom classes
 use Server;
@@ -68,13 +81,12 @@ $window_vbox->show_all;
 $tabs_hbox->show_all;
 $server_window->add($window_vbox);
 
-
 # Load our favorites for the first time
-my $favs = Favorites->new('favs.txt');
+my $favs = Favorites->new($home_dir_folder.'favs.txt');
 $favs->load();
 
 # And our preferences
-my $prefs = Prefs->new('prefs.conf', $server_window); 
+my $prefs = Prefs->new($home_dir_folder.'prefs.conf', $server_window); 
 $prefs->{favs} = $favs;
 $prefs->load();
 
@@ -89,6 +101,7 @@ if ($prefs->get('tray.enable') == 1) {
 	$tray_icon->signal_connect('popup-menu', \&tray_rl);
 }
 else {
+	print "gonna\n";
 	$tray_icon->set_visible(FALSE);
 }
 
@@ -105,6 +118,8 @@ sub create_server {
 	my $sbox = Gtk2::HBox->new;
 	$server->{widgets}->{tab_label} = Gtk2::Label->new('Server');
 	$server->{widgets}->{tab_pic} = Gtk2::Image->new_from_file('gfx/disconnected.png');
+	$server->{prefs} = $prefs;
+	$server->{widgets}->{tray_icon} = $tray_icon;
 	$sbox->add($server->{widgets}->{tab_pic});
 	$sbox->add($server->{widgets}->{tab_label});
 	$sbox->show_all;
@@ -183,6 +198,7 @@ $con_btn->signal_connect('button-press-event' => sub {
 	$con_all->signal_connect('activate' => sub {
 		connect_favs;	
 	});
+	$con_all->set_sensitive(FALSE) if $favs->num() == 0;
 	$fav_menu->append($con_all);
 	my $manage_favs = Gtk2::MenuItem->new('Edit Favorites');
 	$manage_favs->signal_connect('activate' => sub {

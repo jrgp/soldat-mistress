@@ -35,8 +35,8 @@ sub new {
 		'favs.auto_connect' => '0',
 		'logging.enable' => '0',
 		'logging.naming' => '%i:%p_%n.log',
-		'admin.notify' => '0',
-		'tray.enable_icon' => '1',
+		'admin.notify' => '1',
+		'tray.enable' => '1',
 		'tray.minimize_to' => '0'
 	};
 	$self->{showing} = 0;
@@ -95,6 +95,7 @@ sub get {
 		return $self->{settings}->{$key};
 	}
 	else {
+		print "fuckkk\n";
 		return defined $self->{default_settings}->{$key} ? $self->{default_settings}->{$key} : -1;
 	}
 }
