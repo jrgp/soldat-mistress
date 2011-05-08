@@ -26,11 +26,10 @@ use Gtk2::SimpleList;
 use Gtk2::Gdk::Keysyms;
 use Glib qw(TRUE FALSE);
 
-
 # Random bullshit
-my @team_names = qw(None Alpha Bravo Charlie Delta Spectator);
-my @team_colors = qw(black red blue green yellow purple);
-my @mode_names = qw(DM PM TM CTF RM INF HTF);
+our @team_names = qw(None Alpha Bravo Charlie Delta Spectator);
+our @team_colors = qw(black red blue green yellow purple);
+our @mode_names = qw(DM PM TM CTF RM INF HTF);
 
 #
 #
@@ -180,7 +179,7 @@ sub parse_refresh {
 
 		# Get length of name
 		sysread($self->{sock}, $sbuff, 1);
-		$len = unpack('W', $sbuff);
+		$len = unpack('C', $sbuff);
 
 		# Get name using length
 		sysread($self->{sock}, $buff, $len);
@@ -201,7 +200,7 @@ sub parse_refresh {
 	# Get player teams
 	for ($i = 0; $i < 32; $i++) {
 		sysread($self->{sock}, $sbuff, 1);
-		$self->{stats}->{players}[$i]->{'team'} = unpack('W', $sbuff);
+		$self->{stats}->{players}[$i]->{'team'} = unpack('C', $sbuff);
 	}
 	
 	# Get player kills
@@ -254,7 +253,7 @@ sub parse_refresh {
 	
 	# map name len
 	sysread($self->{sock}, $sbuff, 1);
-	$len  = unpack('W', $sbuff);
+	$len  = unpack('C', $sbuff);
 	sysread($self->{sock}, $buff, $len);
 	$self->{stats}->{'map'} = $buff;
 	sysread($self->{sock}, $sbuff, 16 - $len);
@@ -273,7 +272,7 @@ sub parse_refresh {
 
 	# Mode
 	sysread($self->{sock}, $sbuff, 1);
-	$self->{stats}->{'game_mode'} = $mode_names[unpack('W', $sbuff)];
+	$self->{stats}->{'game_mode'} = $mode_names[unpack('C', $sbuff)];
 }
 
 # Try to reliably send data across the socket
@@ -311,12 +310,6 @@ sub set_window {
 	$self->{main_window} = $window;
 }
 
-# And the "page" so we can alter the tab
-sub set_page {
-	my ($self, $page) = @_;
-	$self->{tab} = $page;
-}
-
 # Kill this server tab
 sub kill_us {
 	my $self = shift;
@@ -346,9 +339,6 @@ sub init_gui() {
 	$self->{widgets}->{conn_pw_label} = Gtk2::Label->new_with_mnemonic('Password: ');
 	$self->{widgets}->{conn_addr_label} = Gtk2::Label->new_with_mnemonic('_Host: ');
 	$self->{widgets}->{conn_port_label} = Gtk2::Label->new_with_mnemonic('Port: ');
-
-	#$self->{widgets}->{} = 
-	#$self->{widgets}->{} = 
 
 	# Set shit
 	$self->{widgets}->{conn_pw_txt}->set_visibility(FALSE);
@@ -454,14 +444,11 @@ sub init_gui() {
 
 	$self->{widgets}->{cs_entry}->set_max_length(255);
 	$self->{widgets}->{cs_entry}->set_editable(FALSE);
-	$self->{widgets}->{cs_entry}->set_tooltip_text("Type your sekret command shit here");
 
 	$self->{widgets}->{cs_entry_label}->set_mnemonic_widget($self->{widgets}->{cs_entry});
 
 	$self->{widgets}->{cs_box}->pack_start($self->{widgets}->{cs_entry_label}, FALSE, FALSE, 4);
 	$self->{widgets}->{cs_box}->add($self->{widgets}->{cs_entry});
-
-	$self->{widgets}->{cs_btn}->set_tooltip_text("Send command");
 
 	$self->{widgets}->{content_vbox}->pack_end($self->{widgets}->{cs_box}, FALSE, FALSE, 2);
 
@@ -891,6 +878,7 @@ sub update_gui {
 sub auto_dec_time {
 	my $self = shift;
 	return 1 unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
+	return 1 unless $self->{stats}->{'current_time'} > 0;
 	$self->{stats}->{'current_time'}--;
 	$self->{widgets}->{info_texts}->{'time'}->set_text(
 		sprintf("%d:%02d / %d:%02d", floor($self->{stats}->{'current_time'}/60), $self->{stats}->{'current_time'}%60, floor($self->{stats}->{'time_limit'}/60), $self->{stats}->{'time_limit'}%60)
@@ -912,7 +900,7 @@ sub on_player_speak {
 	$player =~ s/^\s+|\s+$//g;
 	$msg =~ s/^\s+|\s+$//g;
 	if ($msg =~ m/^\!(\S+) ?([^\$]+)?$/) {
-		if ($1 eq 'admin' and $self->{prefs}->get('admin.notify') == 1) {
+		if ($1 eq 'admin' && $self->{notif_enable} && $self->{prefs}->get('admin.notify') == 1) {
 			my $notif = Gtk2::Notify->new_with_status_icon(
 				"$player in ".$self->{settings}->{host}.':'.$self->{settings}->{port},
 				"$player called !admin".(defined $2 && length($2) > 0 ? ": $2" : ''),

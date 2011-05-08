@@ -19,12 +19,27 @@
 # We're fucking perfectionists
 use warnings;
 use strict;
-
-# Need our libraries to better finger the gspot
-use Gtk2 -init;
+use diagnostics;
+  
+use Gtk2 qw(-init);
 use Glib qw(TRUE FALSE);
 use Gtk2::Gdk::Keysyms;
-use Gtk2::Notify qw(-init SoldatMistress!);
+
+my $notif_enable;
+BEGIN {
+	
+	# Kill stdout buffer so shit flies immediately
+	$| = 1;
+	
+	# Gtk2::Notify might not be bundled in
+	if (eval "require Gtk2::Notify") {
+		Gtk2::Notify->init('Soldat Mistress!');
+		$notif_enable = 1;
+	}
+	else {
+		$notif_enable = 0;
+	}
+}
 
 # Get all pithy, er, pathy
 use File::Basename;
@@ -50,9 +65,6 @@ unless (-d $home_dir_folder) {
 use Server;
 use Prefs;
 use Favorites;
-
-# Kill stdout buffer so shit flies immediately
-BEGIN { $| = 1 }
 
 # Start the main gui shit
 my $server_window = new Gtk2::Window("toplevel");
@@ -119,6 +131,7 @@ sub create_server {
 	$server->{widgets}->{tab_label} = Gtk2::Label->new('Server');
 	$server->{widgets}->{tab_pic} = Gtk2::Image->new_from_file('gfx/disconnected.png');
 	$server->{prefs} = $prefs;
+	$server->{notif_enable} = $notif_enable;
 	$server->{widgets}->{tray_icon} = $tray_icon;
 	$sbox->add($server->{widgets}->{tab_pic});
 	$sbox->add($server->{widgets}->{tab_label});
