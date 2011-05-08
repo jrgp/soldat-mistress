@@ -39,6 +39,7 @@ sub new {
 		'tray.enable' => '1',
 		'tray.minimize_to' => '0'
 	};
+	$self->{widgets} = {};
 	$self->{showing} = 0;
 	$self;
 }
@@ -100,7 +101,7 @@ sub get {
 }
 
 # Save a setting, using usual key/value pair assignment
-sub set_setting {
+sub set {
 	my ($self, $key, $value) = @_;
 	$self->{settings}->{$key} = $value;
 }
@@ -132,7 +133,6 @@ sub show_dialog {
 	$self->{pages}->{favs} = $pref_book->append_page($self->get_favs_page(), 'Favorite Servers');
 	#$self->{pages}->{scripts} = $pref_book->append_page($self->get_scripting_page(), 'Scripting');
 	$self->{pages}->{about} = $pref_book->append_page($self->get_about_page(), 'About');
-	$self->{widgets} = {};
 	$pref_book->set_current_page($self->{pages}->{$page}) if defined $self->{pages}->{$page};
 	$self->{dialog_window}->get_content_area()->add($pref_book);
 	$self->{dialog_window}->show_all;
@@ -141,13 +141,52 @@ sub show_dialog {
 
 	# Window closed; do shit:
 	$self->{favs}->save;
+	$self->save_settings_page;
+	$self->save;
 	$self->{showing} = 0;
+}
+
+# Deal with getting values from settings tab when we're done
+sub save_settings_page {
+	my $self = shift;
+	$self->set('admin.notify', $self->{widgets}->{set_notif}->get_active == TRUE ? 1 : 0);
+	$self->set('favs.auto_connect', $self->{widgets}->{set_autofav}->get_active == TRUE ? 1 : 0);
+	$self->set('tray.enable', $self->{widgets}->{set_tray}->get_active == TRUE ? 1 : 0);
+	$self->set('tray.minimize_to', $self->{widgets}->{set_ctray}->get_active == TRUE ? 1 : 0);
 }
 
 # Load contents of settings tab
 sub get_settings_page {
 	my $self = shift;
 	my $vbox = Gtk2::VBox->new;
+	my $al = Gtk2::Alignment->new(.5, 0, .5, 0);
+	my $table = Gtk2::Table->new(5, 2, FALSE);
+	$al->add($table);
+	my ($x, $y) = (0, 1);
+	foreach ((
+		'Connect to favorites on startup',
+		'Notify in-game players saying !admin',
+		'Mistress icon in system tray',
+		'Close/minimize to Tray'
+	)) {
+		my $l = Gtk2::Label->new($_.': ');
+		$l->set_alignment(0, .5);
+		$l->set_padding(5, 2);
+		$table->attach_defaults($l, 0, 1, $x++, $y++);
+	}
+
+	($x, $y) = (0, 1);
+	foreach (qw(set_autofav set_notif set_tray set_ctray)) {
+		$self->{widgets}->{$_} = Gtk2::CheckButton->new;
+		$table->attach_defaults($self->{widgets}->{$_}, 1, 2, $x++, $y++);
+	}
+
+	$self->{widgets}->{set_notif}->set_active($self->get('admin.notify') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_autofav}->set_active($self->get('favs.auto_connect') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_tray}->set_active($self->get('tray.enable') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_ctray}->set_active($self->get('tray.minimize_to') == 1 ? TRUE : FALSE);
+
+	$vbox->add($al);
 	$vbox->show_all;
 	$vbox;
 }

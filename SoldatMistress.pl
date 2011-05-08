@@ -113,7 +113,6 @@ if ($prefs->get('tray.enable') == 1) {
 	$tray_icon->signal_connect('popup-menu', \&tray_rl);
 }
 else {
-	print "gonna\n";
 	$tray_icon->set_visible(FALSE);
 }
 
