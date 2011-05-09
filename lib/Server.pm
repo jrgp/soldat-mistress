@@ -321,7 +321,7 @@ sub init_gui() {
 	my $self = shift;
 
 	# Get common things batch defined. Saves zillions of lines of code
-	$self->{widgets}->{$_} = Gtk2::VBox->new(FALSE, 5) foreach (qw(side_vbox top_vbox content_vbox)); 
+	$self->{widgets}->{$_} = Gtk2::VBox->new(FALSE, 5) foreach (qw(side_vbox top_vbox content_vbox presets_vbox)); 
 	$self->{widgets}->{$_} = Gtk2::HBox->new(FALSE, 5) foreach (qw(main_window_hbox conn_hbox cs_box));
 	$self->{widgets}->{$_} = Gtk2::Entry->new() foreach (qw(conn_addr_txt conn_port_txt conn_pw_txt cs_entry));
 
@@ -367,7 +367,9 @@ sub init_gui() {
 	$self->{widgets}->{info_table} = new Gtk2::Table(scalar @labels, 2, FALSE); 
 	my ($x, $y) = (0, 1);
 	foreach (@labels) {
-		$self->{widgets}->{info_table}->attach_defaults(Gtk2::Label->new($_.': '), 0, 1, $x++, $y++);
+		my $l = Gtk2::Label->new($_.': ');
+		#$l->set_alignment(0, 1);
+		$self->{widgets}->{info_table}->attach_defaults($l, 0, 1, $x++, $y++);
 	}
 	($x, $y) = (0, 1);
 	foreach (qw(map mode np time kl ver)) {
@@ -381,7 +383,7 @@ sub init_gui() {
 	$self->{widgets}->{info_frame}->add($self->{widgets}->{info_table});
 	$self->{widgets}->{side_vbox}->pack_start($self->{widgets}->{info_frame}, FALSE, FALSE, 0);
 	
-	$self->{widgets}->{side_vbox}->pack_start($self->{widgets}->{presets_frame}, FALSE, FALSE, 0);
+	$self->{widgets}->{side_vbox}->pack_start($self->{widgets}->{presets_frame}, TRUE, TRUE, 0);
 	
 	# Player list
 	$self->{widgets}->{player_list} = $self->{support_ip2c} ? Gtk2::SimpleList->new(
@@ -467,6 +469,60 @@ sub init_gui() {
 	$self->{widgets}->{dis_btn}->set_sensitive(FALSE);
 	$self->{widgets}->{cs_btn}->set_sensitive(FALSE);
 	$self->{widgets}->{cs_entry}->set_sensitive(FALSE);
+
+	# Presets action shiz
+	$self->{widgets}->{presets_window} = Gtk2::ScrolledWindow->new (undef, undef);
+	$self->{widgets}->{presets_store} = Gtk2::TreeStore->new(qw(Glib::String));
+	$self->{preset_items} = {
+		'Game' => [
+			'Change Gamemode',
+			'Restart Match',
+			'Next Map',
+			'Change Password'
+		],
+		'Mapping' => [
+			'Pick new map',
+			'Reload list',
+			'Add Map',
+			'Remove Map'
+		],
+		'Players' => [
+			'Add admin',
+			'Remove admin',
+			'Kick last player',
+			'Ban IP',
+			'Unban IP',
+			'Ban player name',
+			'Unban player name',
+			'Kick everyone',
+			'Ban everyone',
+			'Change Welcome',
+			'Add Bot'
+		]
+	};
+	foreach (keys %{$self->{preset_items}}) {
+		my $iter = $self->{widgets}->{presets_store}->append(undef);
+		$self->{widgets}->{presets_store}->set($iter, 0 => $_);
+		$self->{widgets}->{presets_store}->set($self->{widgets}->{presets_store}->append($iter), 0 => $_) foreach (@{$self->{preset_items}{$_}});
+	}
+
+	$self->{widgets}->{presets_tv} = Gtk2::TreeView->new($self->{widgets}->{presets_store});
+	my $presets_column = Gtk2::TreeViewColumn->new;
+	$presets_column->set_title('Actions');
+	my $presets_renderer = Gtk2::CellRendererText->new;
+	$presets_column->pack_start($presets_renderer, FALSE);
+	$presets_column->add_attribute($presets_renderer, text => 0);
+	$self->{widgets}->{presets_tv}->append_column($presets_column);
+	$self->{widgets}->{presets_window}->add($self->{widgets}->{presets_tv});
+	$self->{widgets}->{presets_vbox}->add($self->{widgets}->{presets_window});
+	my $btn_al = Gtk2::Alignment->new(1, 0, 0, 0);
+	$self->{widgets}->{presets_btn} = Gtk2::Button->new('Do It');
+	$btn_al->add($self->{widgets}->{presets_btn});
+	$self->{widgets}->{presets_vbox}->pack_end($btn_al, FALSE, FALSE, 0);
+	$self->{widgets}->{presets_window}->set_policy ('automatic', 'automatic');
+	$self->{widgets}->{presets_frame}->add($self->{widgets}->{presets_vbox});
+	$self->{widgets}->{presets_btn}->set_sensitive(FALSE);
+	$self->{widgets}->{presets_tv}->set_sensitive(FALSE);
 	
 	# Show shit
 	$self->{widgets}->{$_}->show_all()  foreach (qw(side_vbox top_vbox content_vbox)); 
@@ -525,6 +581,7 @@ sub init_gui() {
 	});
 
 	$self->{widgets}->{dis_btn}->signal_connect(clicked => sub {$self->end_socket();});
+	$self->{widgets}->{presets_btn}->signal_connect(clicked => sub {$self->handle_preset();});
 
 	$self->{widgets}->{player_list}->signal_connect('button-press-event' => sub {
 		my ($widget, $event) = @_;
@@ -535,6 +592,147 @@ sub init_gui() {
 
 	# Start disconnect button off as hidden
 	$self->{widgets}->{dis_btn}->hide();
+}
+
+# Handle when we click the Do It! button
+# Calling this a kludge would be a compliment, but sometimes ugly code
+# fits the bill perfectly.
+sub handle_preset {
+	my $self = shift;
+	return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
+	my $sel = $self->{widgets}->{presets_tv}->get_selection;
+	return unless $sel->count_selected_rows == 1 && $sel->get_selected_rows->to_string =~ m/^(\d+):(\d+)$/;
+	my @keys = keys %{$self->{preset_items}};
+	my @vals = @{$self->{preset_items}{$keys[$1]}};
+	my $desired_action = $vals[$2];
+
+	# Handle each action
+	if ($desired_action eq 'Restart Match') {
+		$self->realsend("/restart\n");
+	}
+	elsif ($desired_action eq 'Next Map') {
+		$self->realsend("/nextmap\n");
+	}
+	elsif ($desired_action eq 'Change Gamemode') {
+		$self->change_gamemode;
+	}
+	elsif ($desired_action eq 'Pick new map') {
+		$self->change_map;
+	}
+	elsif ($desired_action eq 'Change Password') {
+		$self->change_pw;
+	}
+	elsif ($desired_action eq 'Add Bot') {
+		$self->add_bot;
+	}
+	else {
+		print "Must handle '$desired_action'\n";
+	}
+}
+
+# Change map
+sub change_map {
+	my $self = shift;
+	return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
+	my $dialog =  Gtk2::Dialog->new(
+		'Change map',
+		$self->{server_window},
+		[qw/modal destroy-with-parent/],
+		'gtk-ok' => 'accept',
+		'gtk-cancel' => 'reject'
+	);
+	my $label = Gtk2::Label->new_with_mnemonic("_Map name?");
+	my $map_entry = Gtk2::Entry->new;
+	$label->set_mnemonic_widget($map_entry);
+	$dialog->get_content_area()->add($label);
+	$dialog->get_content_area()->add($map_entry);
+	$map_entry->signal_connect('key_press_event' => sub {
+		$dialog->response('accept') if $_[1]->keyval == $Gtk2::Gdk::Keysyms{'Return'};
+	});
+	$dialog->show_all;
+	my $resp = $dialog->run();
+	my $map_txt = $map_entry->get_text();
+	$dialog->destroy;
+	if ($resp eq 'accept') {
+		$map_txt =~ s/^\s+|\s+$//g;
+		return if $map_txt eq '';
+		return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
+		$self->realsend("/map $map_txt\n");
+	}
+}
+
+# Change pw
+sub change_pw {
+	my $self = shift;
+	return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
+	my $dialog =  Gtk2::Dialog->new(
+		'Change Game Password',
+		$self->{server_window},
+		[qw/modal destroy-with-parent/],
+		'gtk-ok' => 'accept',
+		'gtk-cancel' => 'reject'
+	);
+	my $label = Gtk2::Label->new_with_mnemonic("_Password");
+	my $pw_entry = Gtk2::Entry->new;
+	$pw_entry->set_visibility(FALSE);
+	$label->set_mnemonic_widget($pw_entry);
+	$dialog->get_content_area()->add($label);
+	$dialog->get_content_area()->add($pw_entry);
+	$pw_entry->signal_connect('key_press_event' => sub {
+		$dialog->response('accept') if $_[1]->keyval == $Gtk2::Gdk::Keysyms{'Return'};
+	});
+	$dialog->show_all;
+	my $resp = $dialog->run();
+	my $pw_txt = $pw_entry->get_text();
+	$dialog->destroy;
+	if ($resp eq 'accept') {
+		$pw_txt =~ s/^\s+|\s+$//g;
+	#	return if $pw_txt eq '';
+		return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
+		$self->realsend("/password $pw_txt\n");
+	}
+}
+
+# Change gamemode
+sub change_gamemode {
+	my $self = shift;
+	return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
+	my $dialog =  Gtk2::Dialog->new(
+		'Change gamemode',
+		$self->{server_window},
+		[qw/modal destroy-with-parent/],
+		'gtk-ok' => 'accept',
+		'gtk-cancel' => 'reject'
+	);
+	my $label = Gtk2::Label->new_with_mnemonic("_Game mode");
+	my $mode_entry = Gtk2::ComboBox->new_text;
+	my $i = 0;
+	foreach (@mode_names) {
+		$mode_entry->append_text($_);
+		$mode_entry->set_active($i) if $_ eq $self->{stats}->{'game_mode'};
+		$i++;
+	}
+	$label->set_mnemonic_widget($mode_entry->child);
+	$dialog->get_content_area()->add($label);
+	$dialog->get_content_area()->add($mode_entry);
+	$dialog->show_all;
+	my $resp = $dialog->run;
+	my $gname = $mode_entry->get_active_text;
+	$dialog->destroy;
+	if ($resp eq 'accept') {
+		$i = 0;
+		my $gid = -1;
+		foreach (@mode_names) {
+			if ($_ eq $gname) {
+				$gid = $i;
+				last;
+			}
+			$i++;
+		}
+		if ($gname ne $self->{stats}->{'game_mode'} && $gid > -1) {
+			$self->realsend("/gamemode $gid\n");
+		}
+	}
 }
 
 # Handle command send
@@ -780,6 +978,8 @@ sub revive_conn_form {
 	$self->{widgets}->{$_}->set_sensitive(TRUE) foreach (qw(conn_addr_txt conn_port_txt conn_pw_txt conn_btn));
 	# CLI command box
 	$self->{widgets}->{cs_btn}->set_sensitive(FALSE);
+	$self->{widgets}->{presets_btn}->set_sensitive(FALSE);
+	$self->{widgets}->{presets_tv}->set_sensitive(FALSE);
 }
 
 # Kill connect form and activate disconnect button
@@ -794,6 +994,10 @@ sub reset_conn_form {
 	$self->{widgets}->{cs_btn}->set_sensitive(TRUE);
 	$self->{widgets}->{cs_entry}->set_sensitive(TRUE);
 	$self->{widgets}->{cs_entry}->set_editable(TRUE);
+	
+	# Preset shit
+	$self->{widgets}->{presets_btn}->set_sensitive(TRUE);
+	$self->{widgets}->{presets_tv}->set_sensitive(TRUE);
 }
 
 # Empty holders of info
@@ -891,7 +1095,9 @@ sub console_add {
 	my ($self, $line) = @_;
 	my @time = localtime(time);
 	$self->{widgets}->{server_log_buff}->insert(
-		$self->{widgets}->{server_log_buff}->get_end_iter, "[$time[2]:$time[1]:$time[0]] ".$line."\n");
+		$self->{widgets}->{server_log_buff}->get_end_iter, 
+		sprintf("[%02d:%02d:%02d] %s\n", $time[2], $time[1], $time[0], $line)
+	);
 }
 
 # When a player speaks, do something

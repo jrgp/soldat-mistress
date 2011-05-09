@@ -66,7 +66,12 @@ sub load {
 	# Otherwise load settings, replacing default values
 	open (my $handle, '<', $self->{filename}) || return 0;
 	foreach (<$handle>) {
-		$self->{settings}->{$1} = $2 if m/^(?!\#)([^=]+)=([^\$]+)$/;
+		if (m/^(?!\#)([^=]+)=([^\$]+)$/) {
+			my ($k, $v) = ($1, $2);
+			$k =~ s/^\s+|\s+$//g;
+			$v =~ s/^\s+|\s+$//g;
+			$self->{settings}->{$k} = $v;
+		}
 	}
 	close $handle;
 	1;
@@ -172,6 +177,9 @@ sub get_settings_page {
 		my $l = Gtk2::Label->new($_.': ');
 		$l->set_alignment(0, .5);
 		$l->set_padding(5, 2);
+		if ($_ eq 'Notify in-game players saying !admin') {
+			$l->set_sensitive($self->{notif_enable} == 1 ? TRUE : FALSE);
+		}
 		$table->attach_defaults($l, 0, 1, $x++, $y++);
 	}
 
@@ -185,6 +193,8 @@ sub get_settings_page {
 	$self->{widgets}->{set_autofav}->set_active($self->get('favs.auto_connect') == 1 ? TRUE : FALSE);
 	$self->{widgets}->{set_tray}->set_active($self->get('tray.enable') == 1 ? TRUE : FALSE);
 	$self->{widgets}->{set_ctray}->set_active($self->get('tray.minimize_to') == 1 ? TRUE : FALSE);
+
+	$self->{widgets}->{set_notif}->set_sensitive($self->{notif_enable} == 1 ? TRUE : FALSE);
 
 	$vbox->add($al);
 	$vbox->show_all;

@@ -31,7 +31,8 @@ BEGIN {
 	# Kill stdout buffer so shit flies immediately
 	$| = 1;
 	
-	# Gtk2::Notify might not be bundled in
+	# Gtk2::Notify might not be bundled in, whereas the main 
+	# gtk2 stuff sometimes comes out of the box
 	if (eval "require Gtk2::Notify") {
 		Gtk2::Notify->init('Soldat Mistress!');
 		$notif_enable = 1;
@@ -100,6 +101,7 @@ $favs->load();
 # And our preferences
 my $prefs = Prefs->new($home_dir_folder.'prefs.conf', $server_window); 
 $prefs->{favs} = $favs;
+$prefs->{notif_enable} = $notif_enable;
 $prefs->load();
 
 # When we die, really die
@@ -294,6 +296,9 @@ $conf_btn->signal_connect(clicked => sub{$prefs->show_dialog('settings');});
 # Left clicking the tray icon
 sub tray_act {
 	# todo
+	if ($prefs->get('tray.minimize_to') == 1) {
+		print "Tray minimize\n";
+	}
 }
 
 # Right clicking the tray icon
