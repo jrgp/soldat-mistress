@@ -869,16 +869,13 @@ sub player_rl_callback {
 	return FALSE unless $event->button == 3;
 	return FALSE unless $event->window == $self->{widgets}->{player_list}->get_bin_window;
 
-	# init shit
-	my ($menu);
-
 	# Get the fucking values. 
 	my ($x, $y) = $event->get_coords;
 	my $p = $self->{widgets}->{player_list}->get_path_at_pos($x, $y);
 
 	# If this isn't a player, offer to add a fucking bot
 	unless ($p) {
-		$menu = Gtk2::Menu->new();
+		my $menu = Gtk2::Menu->new();
 		my $m_addbot = Gtk2::ImageMenuItem->new("Add a bot?");
 		$m_addbot->signal_connect('activate' => sub{$self->add_bot();});
 		$m_addbot->set_image(Gtk2::Image->new_from_file('gfx/addbot.png'));
@@ -893,8 +890,24 @@ sub player_rl_callback {
 	my $pname = $self->{widgets}->{player_list}->{data}[$p->to_string][$self->{support_ip2c} ? 3 : 2];
 	my $pip = $self->{widgets}->{player_list}->{data}[$p->to_string][$self->{support_ip2c} ? 8 : 7];
 
-	# Our popup menu
-	$menu = Gtk2::Menu->new();
+	# Our main right click menu
+	my $menu = Gtk2::Menu->new();
+
+	# Team changing shit
+	my $t_menu = Gtk2::Menu->new();
+	foreach (($self->{stats}->{'game_mode'} eq 'CTF' || $self->{stats}->{'game_mode'} eq 'INF' || $self->{stats}->{'game_mode'} eq 'HTF') ? 
+			(1, 2, 5) : ($self->{stats}->{'game_mode'} eq 'TM' ?
+				(1..5) : (0, 5))) {
+		my $m_setteam = Gtk2::MenuItem->new($team_names[$_]);
+		$m_setteam->signal_connect('activate' => sub{
+			my ($widget, $team) = @_;
+			$self->player_mod("team$team", $pid, $pname, $pip);
+		}, $_);
+		$t_menu->append($m_setteam);
+	}
+	my $t_menu_item = Gtk2::MenuItem->new('Change team');
+	$t_menu_item->set_submenu($t_menu);
+	$menu->append($t_menu_item);
 
 	# The cute fucking items
 	my $m_kick = Gtk2::ImageMenuItem->new("Kick `$pname'");
@@ -948,6 +961,9 @@ sub player_mod {
 	}
 	elsif ($act eq 'dadm') {
 		$cmd = "/unadm $pip";
+	}
+	elsif ($act =~ m/^team(\d)$/) {
+		$cmd = "/setteam$1 $pid";
 	}
 	else {
 		return; 
