@@ -475,29 +475,32 @@ sub init_gui() {
 	$self->{widgets}->{presets_store} = Gtk2::TreeStore->new(qw(Glib::String));
 	$self->{preset_items} = {
 		'Game' => [
-			'Change Gamemode',
-			'Restart Match',
-			'Next Map',
-			'Change Password'
+			'Change Gamemode',	# done
+			'Restart Match',	# done
+			'Next Map',		# done
+			'Change Password',	# done
+			'Reload Settings',	# done	
+			'ReRegister in Lobby',	# done	
+			'Change Welcome'
 		],
 		'Mapping' => [
-			'Pick new map',
-			'Reload list',
-			'Add Map',
-			'Remove Map'
+			'Pick new map',		# done
+			'Reload list'
 		],
 		'Players' => [
 			'Add admin',
 			'Remove admin',
-			'Kick last player',
+			'Kick last player',	# done
+			'Ban last player',	# done
+			'UnBan last player',	# done
 			'Ban IP',
 			'Unban IP',
 			'Ban player name',
 			'Unban player name',
-			'Kick everyone',
-			'Ban everyone',
-			'Change Welcome',
-			'Add Bot'
+			'Kill everyone',	# done
+			'Kick everyone',	# done
+			'Ban everyone',		# done
+			'Add Bot'		# done
 		]
 	};
 	foreach (keys %{$self->{preset_items}}) {
@@ -516,7 +519,7 @@ sub init_gui() {
 	$self->{widgets}->{presets_window}->add($self->{widgets}->{presets_tv});
 	$self->{widgets}->{presets_vbox}->add($self->{widgets}->{presets_window});
 	my $btn_al = Gtk2::Alignment->new(1, 0, 0, 0);
-	$self->{widgets}->{presets_btn} = Gtk2::Button->new('Do It');
+	$self->{widgets}->{presets_btn} = Gtk2::Button->new('Handle my bidding');
 	$btn_al->add($self->{widgets}->{presets_btn});
 	$self->{widgets}->{presets_vbox}->pack_end($btn_al, FALSE, FALSE, 0);
 	$self->{widgets}->{presets_window}->set_policy ('automatic', 'automatic');
@@ -613,6 +616,21 @@ sub handle_preset {
 	elsif ($desired_action eq 'Next Map') {
 		$self->realsend("/nextmap\n");
 	}
+	elsif ($desired_action eq 'Reload Settings') {
+		$self->realsend("/loadcon\n");
+	}
+	elsif ($desired_action eq 'ReRegister in Lobby') {
+		$self->realsend("/lobby\n");
+	}
+	elsif ($desired_action eq 'Kick last player') {
+		$self->realsend("/kicklast\n");
+	}
+	elsif ($desired_action eq 'Ban last player') {
+		$self->realsend("/banlast\n");
+	}
+	elsif ($desired_action eq 'UnBan last player') {
+		$self->realsend("/unbanlast\n");
+	}
 	elsif ($desired_action eq 'Change Gamemode') {
 		$self->change_gamemode;
 	}
@@ -625,8 +643,76 @@ sub handle_preset {
 	elsif ($desired_action eq 'Add Bot') {
 		$self->add_bot;
 	}
+	elsif ($desired_action eq 'Kill everyone') {
+		$self->kill_everyone;
+	}
+	elsif ($desired_action eq 'Kick everyone') {
+		$self->kick_everyone;
+	}
+	elsif ($desired_action eq 'Ban everyone') {
+		$self->ban_everyone;
+	}
 	else {
 		print "Must handle '$desired_action'\n";
+	}
+}
+
+# kill everyone
+sub kill_everyone {
+	my $self = shift;
+	return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
+	foreach (@{$self->{stats}->{players}}) {
+		next if $_->{'name'} eq '';
+		my $pid = $_->{'id'};
+		$self->realsend("/kill $pid\n");
+	}
+}
+
+# kick everyone
+sub kick_everyone {
+	my $self = shift;
+	return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
+	my $dialog =  Gtk2::Dialog->new(
+		'Kick everyone?',
+		$self->{server_window},
+		[qw/modal destroy-with-parent/],
+		'gtk-ok' => 'accept',
+		'gtk-cancel' => 'reject'
+	);
+	my $label = Gtk2::Label->new("Really kick everyone?");
+	$dialog->get_content_area()->add($label);
+	$dialog->show_all;
+	my $resp = $dialog->run();
+	$dialog->destroy;
+	return unless $resp eq 'accept';
+	foreach (@{$self->{stats}->{players}}) {
+		next if $_->{'name'} eq '';
+		my $pid = $_->{'id'};
+		$self->realsend("/kick $pid\n");
+	}
+}
+
+# ban everyone
+sub ban_everyone {
+	my $self = shift;
+	return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
+	my $dialog =  Gtk2::Dialog->new(
+		'Ban everyone?',
+		$self->{server_window},
+		[qw/modal destroy-with-parent/],
+		'gtk-ok' => 'accept',
+		'gtk-cancel' => 'reject'
+	);
+	my $label = Gtk2::Label->new("Really ban everyone?");
+	$dialog->get_content_area()->add($label);
+	$dialog->show_all;
+	my $resp = $dialog->run();
+	$dialog->destroy;
+	return unless $resp eq 'accept';
+	foreach (@{$self->{stats}->{players}}) {
+		next if $_->{'name'} eq '';
+		my $pid = $_->{'id'};
+		$self->realsend("/ban $pid\n");
 	}
 }
 
@@ -687,7 +773,6 @@ sub change_pw {
 	$dialog->destroy;
 	if ($resp eq 'accept') {
 		$pw_txt =~ s/^\s+|\s+$//g;
-	#	return if $pw_txt eq '';
 		return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
 		$self->realsend("/password $pw_txt\n");
 	}
