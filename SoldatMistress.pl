@@ -77,9 +77,9 @@ my $add_btn = Gtk2::Button->new('New Tab');
 my $rem_btn = Gtk2::Button->new('Kill Tab');
 my $con_btn = Gtk2::Button->new('Favorites');
 my $conf_btn = Gtk2::Button->new_from_stock('gtk-preferences');
-my $tray_icon = Gtk2::StatusIcon->new_from_file('gfx/icon_x.png');
+my $tray_icon;
 $server_notebook->set_scrollable(TRUE);
-$server_window->set_default_icon_from_file('gfx/icon_x.png') if  -e 'gfx/icon_x.png';
+$server_window->set_default_icon_from_file('gfx/icon.png') if  -e 'gfx/icon.png';
 $server_window->set_title("Soldat Mistress!");
 $server_window->show_all;
 $tabs_hbox->add($add_btn);
@@ -109,13 +109,11 @@ $server_window->signal_connect (delete_event => sub {Gtk2->main_quit;});
 
 # Tray icon madness
 if ($prefs->get('tray.enable') == 1) {
+	$tray_icon = Gtk2::StatusIcon->new_from_file('gfx/icon.png');
 	$tray_icon->set_tooltip('Soldat Mistress');
 	$tray_icon->set_visible(TRUE);
 	$tray_icon->signal_connect('activate', \&tray_act);
 	$tray_icon->signal_connect('popup-menu', \&tray_rl);
-}
-else {
-	$tray_icon->set_visible(FALSE);
 }
 
 # Start delete button off as dead
@@ -132,6 +130,7 @@ sub create_server {
 	$server->{widgets}->{tab_label} = Gtk2::Label->new('Server');
 	$server->{widgets}->{tab_pic} = Gtk2::Image->new_from_file('gfx/disconnected.png');
 	$server->{prefs} = $prefs;
+	$server->{home_dir_folder} = $home_dir_folder;
 	$server->{notif_enable} = $notif_enable;
 	$server->{widgets}->{tray_icon} = $tray_icon;
 	$sbox->add($server->{widgets}->{tab_pic});

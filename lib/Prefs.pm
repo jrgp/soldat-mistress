@@ -158,6 +158,7 @@ sub save_settings_page {
 	$self->set('favs.auto_connect', $self->{widgets}->{set_autofav}->get_active == TRUE ? 1 : 0);
 	$self->set('tray.enable', $self->{widgets}->{set_tray}->get_active == TRUE ? 1 : 0);
 	$self->set('tray.minimize_to', $self->{widgets}->{set_ctray}->get_active == TRUE ? 1 : 0);
+	$self->set('logging.enable', $self->{widgets}->{set_log_e}->get_active == TRUE ? 1 : 0);
 }
 
 # Load contents of settings tab
@@ -172,7 +173,8 @@ sub get_settings_page {
 		'Connect to favorites on startup',
 		'Notify in-game players saying !admin',
 		'Mistress icon in system tray',
-		'Close/minimize to Tray'
+		'Close/minimize to Tray',
+		'Log console messages (to ~/.soldatmistress/logs/)'
 	)) {
 		my $l = Gtk2::Label->new($_.': ');
 		$l->set_alignment(0, .5);
@@ -184,7 +186,7 @@ sub get_settings_page {
 	}
 
 	($x, $y) = (0, 1);
-	foreach (qw(set_autofav set_notif set_tray set_ctray)) {
+	foreach (qw(set_autofav set_notif set_tray set_ctray set_log_e)) {
 		$self->{widgets}->{$_} = Gtk2::CheckButton->new;
 		$table->attach_defaults($self->{widgets}->{$_}, 1, 2, $x++, $y++);
 	}
@@ -193,6 +195,7 @@ sub get_settings_page {
 	$self->{widgets}->{set_autofav}->set_active($self->get('favs.auto_connect') == 1 ? TRUE : FALSE);
 	$self->{widgets}->{set_tray}->set_active($self->get('tray.enable') == 1 ? TRUE : FALSE);
 	$self->{widgets}->{set_ctray}->set_active($self->get('tray.minimize_to') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_log_e}->set_active($self->get('logging.enable') == 1 ? TRUE : FALSE);
 
 	$self->{widgets}->{set_notif}->set_sensitive($self->{notif_enable} == 1 ? TRUE : FALSE);
 
@@ -223,7 +226,6 @@ sub get_favs_page {
 	$favs_list->set_reorderable (FALSE);
 	my $favs_list_scrollbox = Gtk2::ScrolledWindow->new (undef, undef);
 	$favs_list_scrollbox->set_policy ('automatic', 'automatic');
-	$favs_list_scrollbox->set_size_request (200,250);
 	$favs_list_scrollbox->add($favs_list);
 	$vbox->add($favs_list_scrollbox);
 	my $fav_add_frame = Gtk2::Frame->new('Add');
@@ -328,7 +330,7 @@ sub get_favs_page {
 sub get_about_page {
 	my $self = shift;
 	my $vbox = Gtk2::VBox->new;
-	$vbox->add(Gtk2::Image->new_from_file('gfx/logo1_x.png')) if -e 'gfx/logo1_x.png';
+	$vbox->add(Gtk2::Image->new_from_file('gfx/logo.png')) if -e 'gfx/logo.png';
 	$vbox->add(Gtk2::Label->new(
 		'Soldat Mistress, an admin client for Unix Users'."\n".
 		'(c) 2011 Joe Gillotti [jrgp] <joe@u13.net>'."\n".

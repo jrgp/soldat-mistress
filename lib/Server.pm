@@ -79,6 +79,7 @@ sub connect {
 		Proto => 'tcp') || return 0;
 	$self->realsend($self->{settings}->{pw}."\n");
 	$self->realsend("/Maxplayers\n");
+	$self->realsend("/clientlist\n");
 	$self->realsend("REFRESH\n");
 	$self->{sock_watch} = Gtk2::Helper->add_watch (fileno $self->{sock}, 'in', sub{$self->watch_callback();});
 	$self->{periodic_refresh} = Glib::Timeout->add (5000, sub{$self->auto_refresh();});
@@ -86,6 +87,9 @@ sub connect {
 	$self->{widgets}->{tab_label}->set_text($self->{settings}->{host}.':'.$self->{settings}->{port});
 	$self->{widgets}->{tab_pic}->set_from_file('gfx/connected.png');
 	$self->reset_conn_form();
+	if ($self->{prefs}->get('logging.enable')) {
+		$self->log_start() || print "Error starting log\n";
+	}
 	1;
 }
 
@@ -102,6 +106,7 @@ sub end_socket {
 		$self->{widgets}->{tab_label}->set_text($self->{settings}->{host}.':'.$self->{settings}->{port}.' (Disconnected)');
 	}
 	$self->{widgets}->{tab_pic}->set_from_file('gfx/disconnected.png');
+	$self->log_end();
 }
 
 # Hopefully a good way of determening if we're alive or not
@@ -133,6 +138,19 @@ sub watch_callback {
 	}
 	else {
 		if ($self->{s_buff} eq "\n") {
+			
+			# Append line to log if not binary data
+			unless ($self->{s_line} =~ m/^REFRESHX?/) {
+				$self->log_add($self->{s_line});
+			}
+			
+			# reply to client list request
+			if ($self->{s_line} =~ '^/clientlist') {
+				my $vers = '['.chr(170).'] Soldat Mistress (svn)'."\n";
+				$self->realsend($vers);
+			}
+
+			# other shit
 			if ($self->{s_line} eq "Invalid password.\r") {
 				$self->console_add("[**] Bad Password...");
 				$self->end_socket();
@@ -1130,39 +1148,39 @@ sub update_gui {
 	# Save players
 	foreach (@{$self->{stats}->{players}}) {
 		# Skip empty player slots
-		unless ($_->{'name'} eq '') {
+		next if $_->{'name'} eq '';
 
-			my $ratio = 0;
+		my $ratio = 0;
 
-			if ($_->{'deaths'} == 0 && $_->{'kills'} > 0) {
-				$ratio = $_->{'kills'};	
-			}
-			elsif ($_->{'deaths'} > 0 && $_->{'kills'} > 0) {
-				$ratio = $_->{'kills'} % $_->{'deaths'} == 0 ? $_->{'kills'} / $_->{'deaths'}
-				: sprintf("%.2f", $_->{'kills'} / $_->{'deaths'});
-			}
+		if ($_->{'deaths'} == 0 && $_->{'kills'} > 0) {
+			$ratio = $_->{'kills'};	
+		}
+		elsif ($_->{'deaths'} > 0 && $_->{'kills'} > 0) {
+			$ratio = $_->{'kills'} % $_->{'deaths'} == 0 ? $_->{'kills'} / $_->{'deaths'}
+			: sprintf("%.2f", $_->{'kills'} / $_->{'deaths'});
+		}
 
-			# Add player
-			push @{$self->{widgets}->{player_list}->{data}},
-				$self->{support_ip2c} ? 
-					[$_->{'ip'} eq 'Bot' ? 'N/A' : $ip2c->inet_atocc($_->{'ip'}),
-					$_->{'id'},
+		# Add player
+		push @{$self->{widgets}->{player_list}->{data}},
+			$self->{support_ip2c} ? 
+				[$_->{'ip'} eq 'Bot' ? 'N/A' : $ip2c->inet_atocc($_->{'ip'}),
+				$_->{'id'},
+				'<span color="'.$team_colors[$_->{'team'}].'">'.$team_names[$_->{'team'}].'</span>',
+				$_->{'name'},
+				$_->{'kills'},
+				$_->{'deaths'},
+				$ratio,
+				$_->{'ping'},
+				$_->{'ip'}
+				] : [$_->{'id'},
 					'<span color="'.$team_colors[$_->{'team'}].'">'.$team_names[$_->{'team'}].'</span>',
 					$_->{'name'},
 					$_->{'kills'},
 					$_->{'deaths'},
 					$ratio,
 					$_->{'ping'},
-					$_->{'ip'}
-					] : [$_->{'id'},
-						'<span color="'.$team_colors[$_->{'team'}].'">'.$team_names[$_->{'team'}].'</span>',
-						$_->{'name'},
-						$_->{'kills'},
-						$_->{'deaths'},
-						$ratio,
-						$_->{'ping'},
-						$_->{'ip'}];
-		}
+					$_->{'ip'}];
+		
 	};
 	
 	# info table
@@ -1211,12 +1229,49 @@ sub on_player_speak {
 			my $notif = Gtk2::Notify->new_with_status_icon(
 				"$player in ".$self->{settings}->{host}.':'.$self->{settings}->{port},
 				"$player called !admin".(defined $2 && length($2) > 0 ? ": $2" : ''),
-				'gfx/icon_x.png',
+				'gfx/icon.png',
 				$self->{widgets}->{tray_icon}
 			);
 			$notif->show;
 		}
 	}
+}
+
+# Start log
+sub log_start {
+	my $self = shift;
+	return unless defined $self->{settings};
+	return unless $self->{prefs}->get('logging.enable');
+	my $path = sprintf('%slogs/%s:%d_%d.log', $self->{home_dir_folder}, $self->{settings}->{host}, $self->{settings}->{port}, time());
+	unless (-d $self->{home_dir_folder}.'logs') {
+		return 0 unless mkdir $self->{home_dir_folder}.'logs';
+	}
+	open ($self->{log_handle}, '>', $path) || return 0;
+	{
+		my $fh = select $self->{log_handle};
+		$| = 1;
+		select $fh;
+	}
+	return 1;
+}
+
+# Append line to log 
+sub log_add {
+	my ($self, $line) = @_;
+	return unless $self->{prefs}->get('logging.enable');
+	return unless $self->{log_handle};
+	$line =~ s/^\s+|\s+$//g;
+	my @time = localtime(time);
+	my $msg = sprintf("[%02d:%02d:%02d] %s\n", $time[2], $time[1], $time[0], $line);
+	print {$self->{log_handle}} $msg;
+}
+
+# End the log file
+sub log_end {
+	my $self = shift;
+	return unless $self->{prefs}->get('logging.enable');
+	return unless $self->{log_handle};
+	close $self->{log_handle};
 }
 
 
