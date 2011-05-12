@@ -1,6 +1,7 @@
-SoldatMistress - a GPL'd perl/gtk2 soldat admin client
+SoldatMistress - a perl/gtk2 soldat admin client
 
  - By: jrgp - joe@u13.net
+ - License: GNU General Public License (GPL)
 
 ===============================================
 
@@ -27,8 +28,11 @@ Caveats:
 Install base gtk2 stuff on ubuntu/debian with:
   sudo apt-get install libgtk2-perl libgtk2-notify-perl libpango-perl libglib-perl
 
-On centos and probably also fedora with:
+On centos (install rpmforge repo) and probably also fedora with:
   sudo yum install perl-Gtk2 perl-Gtk2-Notify perl-Pango perl-Glib
+
+On openSUSE:
+  zypper install perl-Gtk2
 
 On freebsd and macports, install or compile this port:
   p5-Gtk2

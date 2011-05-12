@@ -108,7 +108,7 @@ $prefs->load();
 $server_window->signal_connect (delete_event => sub {Gtk2->main_quit;});
 
 # Tray icon madness
-if ($prefs->get('tray.enable') == 1) {
+if ($prefs->get('tray.enable', 'int') == 1) {
 	$tray_icon = Gtk2::StatusIcon->new_from_file('gfx/icon.png');
 	$tray_icon->set_tooltip('Soldat Mistress');
 	$tray_icon->set_visible(TRUE);
@@ -295,7 +295,7 @@ $conf_btn->signal_connect(clicked => sub{$prefs->show_dialog('settings');});
 # Left clicking the tray icon
 sub tray_act {
 	# todo
-	if ($prefs->get('tray.minimize_to') == 1) {
+	if ($prefs->get('tray.minimize_to', 'int') == 1) {
 		print "Tray minimize\n";
 	}
 }
@@ -341,7 +341,7 @@ sub tray_rl {
 }
 
 # Connect to favorites if we want to
-if ($prefs->get('favs.auto_connect') == 1) {
+if ($prefs->get('favs.auto_connect', 'int') == 1) {
 	# Yet start empty server if there are none
 	create_server if connect_favs == 0;
 }

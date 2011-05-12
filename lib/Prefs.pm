@@ -36,6 +36,7 @@ sub new {
 		'logging.enable' => '0',
 		'logging.naming' => '%i:%p_%n.log',
 		'admin.notify' => '1',
+		'admin.name' => 'User',
 		'tray.enable' => '1',
 		'tray.minimize_to' => '0'
 	};
@@ -97,12 +98,19 @@ sub get_all {
 # Return a single setting key, or -1 if it doesn't exist
 sub get {
 	my ($self, $key) = @_;
+	my $res;
 	if (defined $self->{settings}->{$key}) {
-		return $self->{settings}->{$key};
+		$res = $self->{settings}->{$key};
 	}
 	else {
-		return defined $self->{default_settings}->{$key} ? $self->{default_settings}->{$key} : -1;
+		$res = defined $self->{default_settings}->{$key} ? $self->{default_settings}->{$key} : -1;
 	}
+	if (defined $_[2] && $_[2] eq 'int') {
+		unless ($res =~ /^[\d\.]+$/) {
+			$res = 0;
+		}
+	}
+	$res;
 }
 
 # Save a setting, using usual key/value pair assignment
@@ -129,8 +137,7 @@ sub show_dialog {
 	$self->{dialog_window} =  Gtk2::Dialog->new(
 		'Soldat Mistress Preferences',
 		$self->{server_window},
-		[qw/modal destroy-with-parent/],
-	#	'gtk-ok' => 'accept',
+		[qw/modal destroy-with-parent/]
 	);
 	my $pref_book = Gtk2::Notebook->new;
 	$pref_book->set_scrollable(TRUE);
@@ -142,18 +149,23 @@ sub show_dialog {
 	$self->{dialog_window}->get_content_area()->add($pref_book);
 	$self->{dialog_window}->show_all;
 	my $resp = $self->{dialog_window}->run;
-	$self->{dialog_window}->destroy;
 
 	# Window closed; do shit:
 	$self->{favs}->save;
 	$self->save_settings_page;
 	$self->save;
 	$self->{showing} = 0;
+
+	# Important. Destroy the window *after* we get the data out of the fields it contains
+	$self->{dialog_window}->destroy;
 }
 
 # Deal with getting values from settings tab when we're done
 sub save_settings_page {
 	my $self = shift;
+	my $admin_name = $self->{widgets}->{set_uname}->get_text;
+	$admin_name =~ s/^\s+|\s+$//g;
+	$self->set('admin.name', $admin_name);
 	$self->set('admin.notify', $self->{widgets}->{set_notif}->get_active == TRUE ? 1 : 0);
 	$self->set('favs.auto_connect', $self->{widgets}->{set_autofav}->get_active == TRUE ? 1 : 0);
 	$self->set('tray.enable', $self->{widgets}->{set_tray}->get_active == TRUE ? 1 : 0);
@@ -174,7 +186,8 @@ sub get_settings_page {
 		'Notify in-game players saying !admin',
 		'Mistress icon in system tray',
 		'Close/minimize to Tray',
-		'Log console messages (to ~/.soldatmistress/logs/)'
+		'Log console messages (to ~/.soldatmistress/logs/)',
+		'Your Name (shows up in /clientlist and admin chat)'
 	)) {
 		my $l = Gtk2::Label->new($_.': ');
 		$l->set_alignment(0, .5);
@@ -190,12 +203,17 @@ sub get_settings_page {
 		$self->{widgets}->{$_} = Gtk2::CheckButton->new;
 		$table->attach_defaults($self->{widgets}->{$_}, 1, 2, $x++, $y++);
 	}
+	$self->{widgets}->{set_uname} = Gtk2::Entry->new;
+	$table->attach_defaults($self->{widgets}->{set_uname}, 1, 2, $x++, $y++);
+	$self->{widgets}->{set_uname}->set_width_chars(8);
+	$self->{widgets}->{set_uname}->set_max_length(50);
 
-	$self->{widgets}->{set_notif}->set_active($self->get('admin.notify') == 1 ? TRUE : FALSE);
-	$self->{widgets}->{set_autofav}->set_active($self->get('favs.auto_connect') == 1 ? TRUE : FALSE);
-	$self->{widgets}->{set_tray}->set_active($self->get('tray.enable') == 1 ? TRUE : FALSE);
-	$self->{widgets}->{set_ctray}->set_active($self->get('tray.minimize_to') == 1 ? TRUE : FALSE);
-	$self->{widgets}->{set_log_e}->set_active($self->get('logging.enable') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_notif}->set_active($self->get('admin.notify', 'int') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_autofav}->set_active($self->get('favs.auto_connect', 'int') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_tray}->set_active($self->get('tray.enable', 'int') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_ctray}->set_active($self->get('tray.minimize_to', 'int') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_log_e}->set_active($self->get('logging.enable', 'int') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_uname}->set_text($self->get('admin.name'));
 
 	$self->{widgets}->{set_notif}->set_sensitive($self->{notif_enable} == 1 ? TRUE : FALSE);
 

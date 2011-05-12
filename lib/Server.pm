@@ -87,7 +87,7 @@ sub connect {
 	$self->{widgets}->{tab_label}->set_text($self->{settings}->{host}.':'.$self->{settings}->{port});
 	$self->{widgets}->{tab_pic}->set_from_file('gfx/connected.png');
 	$self->reset_conn_form();
-	if ($self->{prefs}->get('logging.enable')) {
+	if ($self->{prefs}->get('logging.enable', 'int')) {
 		$self->log_start() || print "Error starting log\n";
 	}
 	1;
@@ -146,7 +146,7 @@ sub watch_callback {
 			
 			# reply to client list request
 			if ($self->{s_line} =~ '^/clientlist') {
-				my $vers = '['.chr(170).'] Soldat Mistress (svn)'."\n";
+				my $vers = '['.chr(170).'] '.$self->{prefs}->get('admin.name').': Soldat Mistress (svn)'."\n";
 				$self->realsend($vers);
 			}
 
@@ -1225,7 +1225,7 @@ sub on_player_speak {
 	$player =~ s/^\s+|\s+$//g;
 	$msg =~ s/^\s+|\s+$//g;
 	if ($msg =~ m/^\!(\S+) ?([^\$]+)?$/) {
-		if ($1 eq 'admin' && $self->{notif_enable} && $self->{prefs}->get('admin.notify') == 1) {
+		if ($1 eq 'admin' && $self->{notif_enable} && $self->{prefs}->get('admin.notify', 'int') == 1) {
 			my $notif = Gtk2::Notify->new_with_status_icon(
 				"$player in ".$self->{settings}->{host}.':'.$self->{settings}->{port},
 				"$player called !admin".(defined $2 && length($2) > 0 ? ": $2" : ''),
@@ -1241,7 +1241,7 @@ sub on_player_speak {
 sub log_start {
 	my $self = shift;
 	return unless defined $self->{settings};
-	return unless $self->{prefs}->get('logging.enable');
+	return unless $self->{prefs}->get('logging.enable', 'int');
 	my $path = sprintf('%slogs/%s:%d_%d.log', $self->{home_dir_folder}, $self->{settings}->{host}, $self->{settings}->{port}, time());
 	unless (-d $self->{home_dir_folder}.'logs') {
 		return 0 unless mkdir $self->{home_dir_folder}.'logs';
@@ -1258,7 +1258,7 @@ sub log_start {
 # Append line to log 
 sub log_add {
 	my ($self, $line) = @_;
-	return unless $self->{prefs}->get('logging.enable');
+	return unless $self->{prefs}->get('logging.enable', 'int');
 	return unless $self->{log_handle};
 	$line =~ s/^\s+|\s+$//g;
 	my @time = localtime(time);
@@ -1269,7 +1269,7 @@ sub log_add {
 # End the log file
 sub log_end {
 	my $self = shift;
-	return unless $self->{prefs}->get('logging.enable');
+	return unless $self->{prefs}->get('logging.enable', 'int');
 	return unless $self->{log_handle};
 	close $self->{log_handle};
 }
