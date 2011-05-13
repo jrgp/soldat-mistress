@@ -38,7 +38,7 @@ sub new {
 		'admin.notify' => '1',
 		'admin.name' => 'User',
 		'tray.enable' => '1',
-		'tray.minimize_to' => '0'
+		'tray.close_to' => '0'
 	};
 	$self->{widgets} = {};
 	$self->{showing} = 0;
@@ -149,7 +149,13 @@ sub show_dialog {
 	$self->{dialog_window}->get_content_area()->add($pref_book);
 	$self->{dialog_window}->show_all;
 	my $resp = $self->{dialog_window}->run;
+	$self->end_window;
+}
 
+# Deal with either closing the window naturally or forcing the bitch to fucking die
+sub end_window {
+	my $self = shift;
+	
 	# Window closed; do shit:
 	$self->{favs}->save;
 	$self->save_settings_page;
@@ -169,8 +175,11 @@ sub save_settings_page {
 	$self->set('admin.notify', $self->{widgets}->{set_notif}->get_active == TRUE ? 1 : 0);
 	$self->set('favs.auto_connect', $self->{widgets}->{set_autofav}->get_active == TRUE ? 1 : 0);
 	$self->set('tray.enable', $self->{widgets}->{set_tray}->get_active == TRUE ? 1 : 0);
-	$self->set('tray.minimize_to', $self->{widgets}->{set_ctray}->get_active == TRUE ? 1 : 0);
+	$self->set('tray.close_to', $self->{widgets}->{set_ctray}->get_active == TRUE ? 1 : 0);
 	$self->set('logging.enable', $self->{widgets}->{set_log_e}->get_active == TRUE ? 1 : 0);
+
+	# Kill tray icon, if we want. Or, enable it...
+	$self->{tray_icon}->set_visible($self->{widgets}->{set_tray}->get_active);
 }
 
 # Load contents of settings tab
@@ -185,7 +194,7 @@ sub get_settings_page {
 		'Connect to favorites on startup',
 		'Notify in-game players saying !admin',
 		'Mistress icon in system tray',
-		'Close/minimize to Tray',
+		'Close to Tray',
 		'Log console messages (to ~/.soldatmistress/logs/)',
 		'Your Name (shows up in /clientlist and admin chat)'
 	)) {
@@ -211,11 +220,15 @@ sub get_settings_page {
 	$self->{widgets}->{set_notif}->set_active($self->get('admin.notify', 'int') == 1 ? TRUE : FALSE);
 	$self->{widgets}->{set_autofav}->set_active($self->get('favs.auto_connect', 'int') == 1 ? TRUE : FALSE);
 	$self->{widgets}->{set_tray}->set_active($self->get('tray.enable', 'int') == 1 ? TRUE : FALSE);
-	$self->{widgets}->{set_ctray}->set_active($self->get('tray.minimize_to', 'int') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_ctray}->set_active($self->get('tray.close_to', 'int') == 1 ? TRUE : FALSE);
 	$self->{widgets}->{set_log_e}->set_active($self->get('logging.enable', 'int') == 1 ? TRUE : FALSE);
 	$self->{widgets}->{set_uname}->set_text($self->get('admin.name'));
 
 	$self->{widgets}->{set_notif}->set_sensitive($self->{notif_enable} == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_ctray}->set_sensitive($self->get('tray.enable', 'int') == 1 ? TRUE : FALSE);
+	$self->{widgets}->{set_tray}->signal_connect (clicked => sub {
+		$self->{widgets}->{set_ctray}->set_sensitive( $self->{widgets}->{set_tray}->get_active);
+	});
 
 	$vbox->add($al);
 	$vbox->show_all;

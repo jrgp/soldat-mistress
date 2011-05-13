@@ -1248,12 +1248,14 @@ sub log_start {
 		return 0 unless mkdir $self->{home_dir_folder}.'logs';
 	}
 	open ($self->{log_handle}, '>', $path) || return 0;
+
+	# Make filehandle "hot" - kill buffer so writes are more immediate
 	{
 		my $fh = select $self->{log_handle};
 		$| = 1;
 		select $fh;
 	}
-	return 1;
+	1;
 }
 
 # Append line to log 

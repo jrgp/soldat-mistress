@@ -77,7 +77,7 @@ my $add_btn = Gtk2::Button->new('New Tab');
 my $rem_btn = Gtk2::Button->new('Kill Tab');
 my $con_btn = Gtk2::Button->new('Favorites');
 my $conf_btn = Gtk2::Button->new_from_stock('gtk-preferences');
-my $tray_icon;
+my $tray_icon = Gtk2::StatusIcon->new_from_file('gfx/icon.png');
 $server_notebook->set_scrollable(TRUE);
 $server_window->set_default_icon_from_file('gfx/icon.png') if  -e 'gfx/icon.png';
 $server_window->set_title("Soldat Mistress!");
@@ -104,17 +104,13 @@ $prefs->{favs} = $favs;
 $prefs->{notif_enable} = $notif_enable;
 $prefs->load();
 
-# When we die, really die
-$server_window->signal_connect (delete_event => sub {Gtk2->main_quit;});
-
 # Tray icon madness
-if ($prefs->get('tray.enable', 'int') == 1) {
-	$tray_icon = Gtk2::StatusIcon->new_from_file('gfx/icon.png');
-	$tray_icon->set_tooltip('Soldat Mistress');
-	$tray_icon->set_visible(TRUE);
-	$tray_icon->signal_connect('activate', \&tray_act);
-	$tray_icon->signal_connect('popup-menu', \&tray_rl);
-}
+$tray_icon->set_visible($prefs->get('tray.enable', 'int') == 1);
+$tray_icon->set_tooltip('Soldat Mistress');
+$tray_icon->signal_connect('activate', \&tray_act);
+$tray_icon->signal_connect('popup-menu', \&tray_rl);
+
+$prefs->{tray_icon} = $tray_icon;
 
 # Start delete button off as dead
 $rem_btn->set_sensitive(FALSE);
@@ -293,12 +289,38 @@ $con_btn->signal_connect('button-press-event' => sub {
 $conf_btn->signal_connect(clicked => sub{$prefs->show_dialog('settings');});
 
 # Left clicking the tray icon
+my $is_hidden = 0;
 sub tray_act {
-	# todo
-	if ($prefs->get('tray.minimize_to', 'int') == 1) {
-		print "Tray minimize\n";
+	if ($prefs->get('tray.enable', 'int') == 1) {
+		if ($is_hidden == 0) {
+			$server_window->hide_all;
+			$prefs->end_window if $prefs->{showing};
+			$is_hidden = 1;
+		}
+		else {
+			$server_window->show_all;
+			$is_hidden = 0;
+		}
 	}
 }
+
+# When window is closed
+$server_window->signal_connect (delete_event => sub {
+	
+	# Hide in tray if that's enabled
+	if ($prefs->get('tray.enable', 'int') == 1 && $prefs->get('tray.close_to', 'int') == 1) {
+		$server_window->hide_all;
+		$prefs->end_window if $prefs->{showing};
+		$is_hidden = 1;
+	}
+	
+	# Kill otherwise
+	else {
+		$prefs->end_window if $prefs->{showing};
+		Gtk2->main_quit;
+	}
+});
+
 
 # Right clicking the tray icon
 sub tray_rl {
@@ -332,7 +354,10 @@ sub tray_rl {
 
 	$menu->add(Gtk2::SeparatorMenuItem->new);
 	my $q_btn = Gtk2::ImageMenuItem->new_from_stock('gtk-close');
-	$q_btn->signal_connect('activate' => sub{Gtk2->main_quit;});
+	$q_btn->signal_connect('activate' => sub{
+		$prefs->end_window if $prefs->{showing};
+		Gtk2->main_quit;
+	});
 	$menu->add($q_btn);
 	$menu->show_all;
 	my ($x, $y, $push_in) = Gtk2::StatusIcon::position_menu($menu, $widget);
