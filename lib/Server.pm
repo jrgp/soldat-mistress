@@ -25,6 +25,7 @@ use Gtk2::Helper;
 use Gtk2::SimpleList;
 use Gtk2::Gdk::Keysyms;
 use Glib qw(TRUE FALSE);
+use Pango;
 
 # Random bullshit
 our @team_names = qw(None Alpha Bravo Charlie Delta Spectator);
