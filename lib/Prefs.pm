@@ -34,11 +34,11 @@ sub new {
 	$self->{settings} = {
 		'favs.auto_connect' => '0',
 		'logging.enable' => '0',
-		'logging.naming' => '%i:%p_%n.log',
 		'admin.notify' => '1',
 		'admin.name' => 'User',
 		'tray.enable' => '1',
-		'tray.close_to' => '0'
+		'tray.close_to' => '0',
+		'auto_reconnect' => '0'
 	};
 	$self->{widgets} = {};
 	$self->{showing} = 0;
@@ -177,6 +177,7 @@ sub save_settings_page {
 	$self->set('tray.enable', $self->{widgets}->{set_tray}->get_active == TRUE ? 1 : 0);
 	$self->set('tray.close_to', $self->{widgets}->{set_ctray}->get_active == TRUE ? 1 : 0);
 	$self->set('logging.enable', $self->{widgets}->{set_log_e}->get_active == TRUE ? 1 : 0);
+	$self->set('auto_reconnect', $self->{widgets}->{set_auto_reconnect}->get_active == TRUE ? 1 : 0);
 
 	# Kill tray icon, if we want. Or, enable it...
 	$self->{tray_icon}->set_visible($self->{widgets}->{set_tray}->get_active);
@@ -196,7 +197,8 @@ sub get_settings_page {
 		'Mistress icon in system tray',
 		'Close to Tray',
 		'Log console messages (to ~/.soldatmistress/logs/)',
-		'Your Name (shows up in /clientlist and admin chat)'
+		'Try reconnecting to servers when connection is lost',
+		'Your Name (shows up in /clientlist and admin chat)',
 	)) {
 		my $l = Gtk2::Label->new($_.': ');
 		$l->set_alignment(0, .5);
@@ -208,7 +210,7 @@ sub get_settings_page {
 	}
 
 	($x, $y) = (0, 1);
-	foreach (qw(set_autofav set_notif set_tray set_ctray set_log_e)) {
+	foreach (qw(set_autofav set_notif set_tray set_ctray set_log_e set_auto_reconnect)) {
 		$self->{widgets}->{$_} = Gtk2::CheckButton->new;
 		$table->attach_defaults($self->{widgets}->{$_}, 1, 2, $x++, $y++);
 	}
@@ -222,6 +224,9 @@ sub get_settings_page {
 	$self->{widgets}->{set_tray}->set_active($self->get('tray.enable', 'int') == 1 ? TRUE : FALSE);
 	$self->{widgets}->{set_ctray}->set_active($self->get('tray.close_to', 'int') == 1 ? TRUE : FALSE);
 	$self->{widgets}->{set_log_e}->set_active($self->get('logging.enable', 'int') == 1 ? TRUE : FALSE);
+
+	$self->{widgets}->{set_auto_reconnect}->set_active($self->get('auto_reconnect', 'int') == 1 ? TRUE : FALSE);
+
 	$self->{widgets}->{set_uname}->set_text($self->get('admin.name'));
 
 	$self->{widgets}->{set_notif}->set_sensitive($self->{notif_enable} == 1 ? TRUE : FALSE);

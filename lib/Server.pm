@@ -85,6 +85,7 @@ sub connect {
 	$self->{sock_watch} = Gtk2::Helper->add_watch (fileno $self->{sock}, 'in', sub{$self->watch_callback();});
 	$self->{periodic_refresh} = Glib::Timeout->add (5000, sub{$self->auto_refresh();});
 	$self->{periodic_time_dec} = Glib::Timeout->add (1000, sub{$self->auto_dec_time();});
+	Glib::Source->remove ($self->{periodic_attempt_reconnect}) if $self->{periodic_attempt_reconnect};
 	$self->{widgets}->{tab_label}->set_text($self->{settings}->{host}.':'.$self->{settings}->{port});
 	$self->{widgets}->{tab_pic}->set_from_file('gfx/connected.png');
 	$self->reset_conn_form();
@@ -96,7 +97,7 @@ sub connect {
 
 # What happens when we want to disconnect
 sub end_socket {
-	my $self = shift;
+	my ($self) = @_;
 	Gtk2::Helper->remove_watch($self->{sock_watch}) if $self->{sock_watch};
 	Glib::Source->remove ($self->{periodic_refresh}) if $self->{periodic_refresh};
 	Glib::Source->remove ($self->{periodic_time_dec}) if $self->{periodic_time_dec};
@@ -108,12 +109,29 @@ sub end_socket {
 	}
 	$self->{widgets}->{tab_pic}->set_from_file('gfx/disconnected.png');
 	$self->log_end();
+
+	if (defined $_[1] && $_[1] eq 'reconn' && $self->{prefs}->get('auto_reconnect')) {
+		$self->{periodic_attempt_reconnect} = Glib::Timeout->add (20000, sub{$self->try_reconnect();});
+	}
+}
+
+# try reconnecting if the shit sucks
+sub try_reconnect {
+	my $self = shift;
+	return unless defined $self->check_connected;
+	return unless defined $self->{settings};
+	if ($self->connect($self->{settings})) {
+		return 0;
+	}
+	else {
+		return 1;
+	}
 }
 
 # Hopefully a good way of determening if we're alive or not
 sub check_connected {
 	my $self = shift;
-	if ($self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected) {
+	if ($self->{sock} != 0 && defined $self->{sock} && !$self->{sock}->error) {
 		return 1;
 	}
 	else {
@@ -134,7 +152,7 @@ sub watch_callback {
 	my $self = shift;
 		
 	if (not sysread($self->{sock}, $self->{s_buff}, 1)) {
-		$self->end_socket();
+		$self->end_socket('reconn');
 		return 1;
 	}
 	else {
@@ -867,10 +885,9 @@ sub cmd_send_callback {
 		return;
 	}
 
-	# Want to be chatting instead?
-	unless ($cmd =~ m/^[\/]/) {
-		$self->{widgets}->{cs_entry}->set_text("/say $cmd");
-		return;
+	# Admin chat..
+	unless ($cmd =~ m/^[\/|@]/) {
+		$cmd = "@[".$self->{prefs}->get('admin.name')."] $cmd";
 	}
 	
 	# Give it
