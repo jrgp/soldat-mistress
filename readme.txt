@@ -28,14 +28,18 @@ Caveats:
 Install base gtk2 stuff on ubuntu/debian with:
   sudo apt-get install libgtk2-perl libgtk2-notify-perl libpango-perl libglib-perl
 
-On centos (install rpmforge repo) and probably also fedora with:
+On CentOS/RHEL (install rpmforge repo) and probably also fedora with:
   sudo yum install perl-Gtk2 perl-Gtk2-Notify perl-Pango perl-Glib
 
 On openSUSE:
   zypper install perl-Gtk2
 
+On Arch:
+  packman -S gtk2-perl
+
 On freebsd and macports, install or compile this port:
   p5-Gtk2
 
-If gtk2::notify was not installed via a package above, install it from cpan:
+If gtk2::notify was not installed via a package above, install it from cpan. This will 
+likely also require you to install the development packages for gtk2 and libnotify
   Gtk2::Notify
