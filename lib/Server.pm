@@ -496,7 +496,7 @@ sub init_gui() {
 	$self->{widgets}->{content_vbox}->pack_end($self->{widgets}->{cs_box}, FALSE, FALSE, 2);
 
 	$self->{widgets}->{cs_entry}->signal_connect('key_press_event' => sub {
-		if ($_[1]->keyval == $Gtk2::Gdk::Keysyms{'Return'}) {
+		if ($_[1]->keyval == Gtk2::Gdk->keyval_from_name('Return')) {
 			$self->{widgets}->{cs_btn}->clicked;
 			return 1;
 		}
@@ -606,19 +606,19 @@ sub init_gui() {
 	});
 	
 	$self->{widgets}->{conn_addr_txt}->signal_connect('key_press_event' => sub {
-		if ($_[1]->keyval == $Gtk2::Gdk::Keysyms{'Return'}) {
+		if ($_[1]->keyval == Gtk2::Gdk->keyval_from_name('Return')) {
 			$self->{widgets}->{conn_btn}->clicked;
 			return 1;
 		}
 	});
 	$self->{widgets}->{conn_port_txt}->signal_connect('key_press_event' => sub {
-		if ($_[1]->keyval == $Gtk2::Gdk::Keysyms{'Return'}) {
+		if ($_[1]->keyval == Gtk2::Gdk->keyval_from_name('Return')) {
 			$self->{widgets}->{conn_btn}->clicked;
 			return 1;
 		}
 	});
 	$self->{widgets}->{conn_pw_txt}->signal_connect('key_press_event' => sub {
-		if ($_[1]->keyval == $Gtk2::Gdk::Keysyms{'Return'}) {
+		if ($_[1]->keyval == Gtk2::Gdk->keyval_from_name('Return')) {
 			$self->{widgets}->{conn_btn}->clicked;
 			return 1;
 		}
@@ -774,7 +774,7 @@ sub change_map {
 	$dialog->get_content_area()->add($label);
 	$dialog->get_content_area()->add($map_entry);
 	$map_entry->signal_connect('key_press_event' => sub {
-		$dialog->response('accept') if $_[1]->keyval == $Gtk2::Gdk::Keysyms{'Return'};
+		$dialog->response('accept') if $_[1]->keyval == Gtk2::Gdk->keyval_from_name('Return');
 	});
 	$dialog->show_all;
 	my $resp = $dialog->run();
@@ -806,7 +806,7 @@ sub change_pw {
 	$dialog->get_content_area()->add($label);
 	$dialog->get_content_area()->add($pw_entry);
 	$pw_entry->signal_connect('key_press_event' => sub {
-		$dialog->response('accept') if $_[1]->keyval == $Gtk2::Gdk::Keysyms{'Return'};
+		$dialog->response('accept') if $_[1]->keyval == Gtk2::Gdk->keyval_from_name('Return');
 	});
 	$dialog->show_all;
 	my $resp = $dialog->run();
@@ -1056,7 +1056,7 @@ sub add_bot {
 	
 	# Make pressing enter in the text field accept it 
 	$bot_entry->child->signal_connect('key_press_event' => sub {
-		$dialog->response('accept') if $_[1]->keyval == $Gtk2::Gdk::Keysyms{'Return'};
+		$dialog->response('accept') if $_[1]->keyval == Gtk2::Gdk->keyval_from_name('Return');
 	});
 
 	# Show it
