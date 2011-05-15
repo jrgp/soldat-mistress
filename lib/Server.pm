@@ -77,7 +77,9 @@ sub connect {
 	$self->{sock} = new IO::Socket::INET (
 		PeerAddr => $self->{settings}->{host},
 		PeerPort => $self->{settings}->{port},
-		Proto => 'tcp') || return 0;
+		Proto => 'tcp',
+		Timeout => 3	# make freezes less painful
+	) || return 0;
 	$self->realsend($self->{settings}->{pw}."\n");
 	$self->realsend("/Maxplayers\n");
 	$self->realsend("/clientlist\n");
@@ -89,9 +91,7 @@ sub connect {
 	$self->{widgets}->{tab_label}->set_text($self->{settings}->{host}.':'.$self->{settings}->{port});
 	$self->{widgets}->{tab_pic}->set_from_file('gfx/connected.png');
 	$self->reset_conn_form();
-	if ($self->{prefs}->get('logging.enable', 'int')) {
-		$self->log_start() || print "Error starting log\n";
-	}
+	$self->log_start() if $self->{prefs}->get('logging.enable', 'int');
 	1;
 }
 
@@ -110,8 +110,10 @@ sub end_socket {
 	$self->{widgets}->{tab_pic}->set_from_file('gfx/disconnected.png');
 	$self->log_end();
 
+	# We want to reconnect?
 	if (defined $_[1] && $_[1] eq 'reconn' && $self->{prefs}->get('auto_reconnect')) {
 		$self->{periodic_attempt_reconnect} = Glib::Timeout->add (20000, sub{$self->try_reconnect();});
+		$self->console_add("[**] Will try to reconnect in 20 seconds...");
 	}
 }
 
@@ -121,9 +123,11 @@ sub try_reconnect {
 	return unless defined $self->check_connected;
 	return unless defined $self->{settings};
 	if ($self->connect($self->{settings})) {
+		$self->console_add("[**] Automagically reconnected successfully...");
 		return 0;
 	}
 	else {
+		$self->console_add("[**] Will try reconnecting again in 20 seconds...");
 		return 1;
 	}
 }
