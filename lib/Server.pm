@@ -78,7 +78,7 @@ sub connect {
 		PeerAddr => $self->{settings}->{host},
 		PeerPort => $self->{settings}->{port},
 		Proto => 'tcp',
-		Timeout => 3	# make freezes less painful
+		Timeout => 3,	# make freezes less painful
 	) || return 0;
 	$self->realsend($self->{settings}->{pw}."\n");
 	$self->realsend("/Maxplayers\n");
@@ -522,22 +522,14 @@ sub init_gui() {
 			'Change Password',	# done
 			'Reload Settings',	# done	
 			'ReRegister in Lobby',	# done	
-			'Change Welcome'
 		],
 		'Mapping' => [
 			'Pick new map',		# done
-			'Reload list'
 		],
 		'Players' => [
-			'Add admin',
-			'Remove admin',
 			'Kick last player',	# done
 			'Ban last player',	# done
 			'UnBan last player',	# done
-			'Ban IP',
-			'Unban IP',
-			'Ban player name',
-			'Unban player name',
 			'Kill everyone',	# done
 			'Kick everyone',	# done
 			'Ban everyone',		# done
