@@ -78,7 +78,7 @@ sub connect {
 		PeerAddr => $self->{settings}->{host},
 		PeerPort => $self->{settings}->{port},
 		Proto => 'tcp',
-		Timeout => 3,	# make freezes less painful
+		Timeout => 3	
 	) || return 0;
 	$self->realsend($self->{settings}->{pw}."\n");
 	$self->realsend("/Maxplayers\n");
@@ -101,6 +101,7 @@ sub end_socket {
 	Gtk2::Helper->remove_watch($self->{sock_watch}) if $self->{sock_watch};
 	Glib::Source->remove ($self->{periodic_refresh}) if $self->{periodic_refresh};
 	Glib::Source->remove ($self->{periodic_time_dec}) if $self->{periodic_time_dec};
+	Glib::Source->remove ($self->{periodic_attempt_reconnect}) if $self->{periodic_attempt_reconnect};
 	close $self->{sock} if $self->{sock};
 	$self->revive_conn_form();
 	$self->empty_gui();
@@ -305,8 +306,6 @@ sub parse_refresh {
 	sysread($self->{sock}, $sbuff, 4);
 	$self->{stats}->{'current_time'} = ceil(unpack('L', $sbuff) / 60);
 
-	#print $self->{stats}->{'time_limit'} ."\n";
-	
 	# Kill limit
 	sysread($self->{sock}, $sbuff, 2);
 	$self->{stats}->{'kill_limit'} = unpack('S', $sbuff);
@@ -585,15 +584,20 @@ sub init_gui() {
 			return;
 		}
 
-		if ($self->connect({
-			host => $addr,
-			port => $port,
-			pw => $pass
-		}) == 1) {
-		}
-		else {
-			$self->gui_notif("Oh Fuck!", "Couldn't connect");
-		}
+		Glib::Idle->add(
+			sub {
+				my $self = shift;
+				if ($self->connect({
+					host => $addr,
+					port => $port,
+					pw => $pass
+				}) == 0) {
+					$self->gui_notif("Oh Fuck!", "Couldn't connect");
+				}
+				0;
+			},
+			$self
+		);
 		
 	});
 	

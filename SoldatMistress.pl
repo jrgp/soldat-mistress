@@ -200,7 +200,11 @@ sub connect_favs {
 			$nervs[$n]->{widgets}->{conn_port_txt}->set_text($_->{port});
 			$nervs[$n]->{widgets}->{conn_addr_txt}->set_text($_->{host});
 			$nervs[$n]->{widgets}->{conn_pw_txt}->set_text($_->{pw});
-			$nervs[$n]->connect($_);
+			Glib::Idle->add(sub{
+				my $info = $_[0];
+				$nervs[$n]->connect($info);
+				0;
+			}, $_);
 			$connected++;
 		}
 	}
@@ -273,11 +277,15 @@ $con_btn->signal_connect('button-press-event' => sub {
 				$nervs[$n]->{widgets}->{conn_port_txt}->set_text($port);
 				$nervs[$n]->{widgets}->{conn_addr_txt}->set_text($host);
 				$nervs[$n]->{widgets}->{conn_pw_txt}->set_text($pw);
-				$nervs[$n]->connect({
-					host => $host, 
-					port => $port,
-					pw => $pw
-				}) || $nervs[$n]->gui_notif('Oh Fuck!', 'Couldn\'t connect');
+				Glib::Idle->add(sub{
+					my ($n, $host, $port, $pw) = @{$_[0]};
+					$nervs[$n]->connect({
+						host => $host, 
+						port => $port,
+						pw => $pw
+					}) || $nervs[$n]->gui_notif('Oh Fuck!', 'Couldn\'t connect');
+					0;
+				}, [$n, $host, $port, $pw]);
 			}, [$_->{host}, $_->{port}, $_->{pw}]);
 			$fav_menu->append($fsm);
 		}
