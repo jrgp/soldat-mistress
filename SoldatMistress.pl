@@ -54,7 +54,7 @@ chdir $here unless $here eq '.';
 umask(0077);
 
 # Our local folder for fun shit
-my $home_dir_folder = $ENV{HOME}.'/.soldatmistress/';
+my $home_dir_folder = $ENV{$^O eq 'MSWin32' ? 'APPDATA' : 'HOME'}.'/.soldatmistress/';
 my $home_dir_ok = 1;
 unless (-d $home_dir_folder) {
 	unless (mkdir ($home_dir_folder)) {

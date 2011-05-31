@@ -74,7 +74,7 @@ sub new {
 sub connect {
 	my ($self, $settings) = @_;
 	$self->{settings} = $settings;
-	$self->{sock} = new IO::Socket::INET (
+	$self->{sock} = IO::Socket::INET->new(
 		PeerAddr => $self->{settings}->{host},
 		PeerPort => $self->{settings}->{port},
 		Proto => 'tcp',
@@ -1219,7 +1219,7 @@ sub update_gui {
 sub auto_dec_time {
 	my $self = shift;
 	return 1 unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
-	return 1 unless $self->{stats}->{'current_time'} > 0;
+	return 1 unless defined $self->{stats}->{'current_time'} && $self->{stats}->{'current_time'} > 0;
 	$self->{stats}->{'current_time'}--;
 	$self->{widgets}->{info_texts}->{'time'}->set_text(
 		sprintf("%d:%02d / %d:%02d", floor($self->{stats}->{'current_time'}/60), $self->{stats}->{'current_time'}%60, floor($self->{stats}->{'time_limit'}/60), $self->{stats}->{'time_limit'}%60)
