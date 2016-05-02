@@ -1,23 +1,23 @@
 
 # This file is part of Soldat Mistress (c) 2011 Joe Gillotti.
-# 
+#
 # Soldat Mistress is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Soldat Mistress is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Soldat Mistress.  If not, see <http://www.gnu.org/licenses/>.
 
 package Server;
 use warnings;
 use strict;
-use IO::Socket; 
+use IO::Socket;
 use Socket;
 use POSIX;
 use Gtk2 -init;
@@ -78,7 +78,7 @@ sub connect {
 		PeerAddr => $self->{settings}->{host},
 		PeerPort => $self->{settings}->{port},
 		Proto => 'tcp',
-		Timeout => 3	
+		Timeout => 3
 	) || return 0;
 	$self->realsend($self->{settings}->{pw}."\n");
 	$self->realsend("/Maxplayers\n");
@@ -155,22 +155,22 @@ sub auto_refresh {
 # Whenever we get data from socket, it starts here
 sub watch_callback {
 	my $self = shift;
-		
+
 	if (not sysread($self->{sock}, $self->{s_buff}, 1)) {
 		$self->end_socket('reconn');
 		return 1;
 	}
 	else {
 		if ($self->{s_buff} eq "\n") {
-			
+
 			# Append line to log if not binary data
 			unless ($self->{s_line} =~ m/^REFRESHX?/) {
 				$self->log_add($self->{s_line});
 			}
-			
+
 			# reply to client list request
 			if ($self->{s_line} =~ '^/clientlist') {
-				my $vers = '['.chr(170).'] '.$self->{prefs}->get('admin.name').': Soldat Mistress (svn)'."\n";
+				my $vers = '['.chr(170).'] '.$self->{prefs}->get('admin.name').': Soldat Mistress (git)'."\n";
 				$self->realsend($vers);
 			}
 
@@ -228,7 +228,7 @@ sub parse_refresh {
 
 		# Skip filler
 		sysread($self->{sock}, $sbuff, 24 - $len);
-		
+
 		# Start player reference
 		$self->{stats}->{players}[$i] = {};
 
@@ -244,25 +244,25 @@ sub parse_refresh {
 		sysread($self->{sock}, $sbuff, 1);
 		$self->{stats}->{players}[$i]->{'team'} = unpack('C', $sbuff);
 	}
-	
+
 	# Get player kills
 	for ($i = 0; $i < 32; $i++) {
 		sysread($self->{sock}, $sbuff, 2);
 		$self->{stats}->{players}[$i]->{'kills'} = unpack('S', $sbuff);
 	}
-	
+
 	# Get player deaths
 	for ($i = 0; $i < 32; $i++) {
 		sysread($self->{sock}, $sbuff, 2);
 		$self->{stats}->{players}[$i]->{'deaths'} = unpack('S', $sbuff);
 	}
-	
+
 	# Get player pings
 	for ($i = 0; $i < 32; $i++) {
 		sysread($self->{sock}, $sbuff, 1);
 		$self->{stats}->{players}[$i]->{'ping'} = unpack('C', $sbuff);
 	}
-	
+
 	# Get player IDs
 	for ($i = 0; $i < 32; $i++) {
 		sysread($self->{sock}, $sbuff, 1);
@@ -292,7 +292,7 @@ sub parse_refresh {
 	# delta score
 	sysread($self->{sock}, $sbuff, 2);
 	$self->{stats}->{'score_delta'} = unpack('S', $sbuff);
-	
+
 	# map name len
 	sysread($self->{sock}, $sbuff, 1);
 	$len  = unpack('C', $sbuff);
@@ -361,7 +361,7 @@ sub init_gui() {
 	my $self = shift;
 
 	# Get common things batch defined. Saves zillions of lines of code
-	$self->{widgets}->{$_} = Gtk2::VBox->new(FALSE, 5) foreach (qw(side_vbox top_vbox content_vbox presets_vbox)); 
+	$self->{widgets}->{$_} = Gtk2::VBox->new(FALSE, 5) foreach (qw(side_vbox top_vbox content_vbox presets_vbox));
 	$self->{widgets}->{$_} = Gtk2::HBox->new(FALSE, 5) foreach (qw(main_window_hbox conn_hbox cs_box));
 	$self->{widgets}->{$_} = Gtk2::Entry->new() foreach (qw(conn_addr_txt conn_port_txt conn_pw_txt cs_entry));
 
@@ -396,15 +396,15 @@ sub init_gui() {
 	# Get shit packed accordingly
 	$self->{widgets}->{top_vbox}->pack_start($self->{widgets}->{conn_frame}, FALSE, FALSE, 0);
 	$self->{widgets}->{main_window_hbox}->add($self->{widgets}->{content_vbox});
-	$self->{widgets}->{conn_hbox}->add($self->{widgets}->{$_}) foreach(qw(conn_addr_label conn_addr_txt conn_port_label 
+	$self->{widgets}->{conn_hbox}->add($self->{widgets}->{$_}) foreach(qw(conn_addr_label conn_addr_txt conn_port_label
 		conn_port_txt conn_pw_label conn_pw_txt conn_btn));
 	$self->{widgets}->{conn_hbox}->pack_end($self->{widgets}->{dis_btn}, FALSE, FALSE, 0);
 	$self->{widgets}->{conn_al}->add($self->{widgets}->{conn_hbox});
 	$self->{widgets}->{conn_frame}->add($self->{widgets}->{conn_al});
-	
+
 	# Info table
 	my @labels = ('Map', 'Game Mode', 'Num Players', 'Time Left', 'Score Limit', 'Version');
-	$self->{widgets}->{info_table} = new Gtk2::Table(scalar @labels, 2, FALSE); 
+	$self->{widgets}->{info_table} = new Gtk2::Table(scalar @labels, 2, FALSE);
 	my ($x, $y) = (0, 1);
 	foreach (@labels) {
 		my $l = Gtk2::Label->new($_.': ');
@@ -422,9 +422,9 @@ sub init_gui() {
 	$self->{widgets}->{main_window_hbox}->pack_end($self->{widgets}->{side_vbox}, FALSE, FALSE, 0);
 	$self->{widgets}->{info_frame}->add($self->{widgets}->{info_table});
 	$self->{widgets}->{side_vbox}->pack_start($self->{widgets}->{info_frame}, FALSE, FALSE, 0);
-	
+
 	$self->{widgets}->{side_vbox}->pack_start($self->{widgets}->{presets_frame}, TRUE, TRUE, 0);
-	
+
 	# Player list
 	$self->{widgets}->{player_list} = $self->{support_ip2c} ? Gtk2::SimpleList->new(
 		'Country' => 'text',
@@ -449,13 +449,13 @@ sub init_gui() {
 	$self->{widgets}->{player_list}->set_rules_hint (TRUE);
 	$self->{widgets}->{player_list}->set_reorderable (FALSE);
 	map { $_->set_resizable (TRUE) } $self->{widgets}->{player_list}->get_columns;
-	
+
 	$self->{widgets}->{player_list_scrollbox} = Gtk2::ScrolledWindow->new (undef, undef);
 	$self->{widgets}->{player_list_scrollbox}->set_policy ('automatic', 'always');
 	$self->{widgets}->{player_list_scrollbox}->set_size_request (500,300);
 	$self->{widgets}->{player_list_scrollbox}->add($self->{widgets}->{player_list});
 	$self->{widgets}->{main_pane}->pack1($self->{widgets}->{player_list_scrollbox}, TRUE, FALSE);
-	
+
 	# Server log
 	$self->{widgets}->{server_log_scrollbox} = Gtk2::ScrolledWindow->new (undef, undef);
 	$self->{widgets}->{server_log_scrollbox}->set_policy ('automatic', 'always');
@@ -480,7 +480,7 @@ sub init_gui() {
 	$self->{widgets}->{server_log_scrollbox}->add($self->{widgets}->{server_log});
 	$self->{widgets}->{main_pane}->pack2($self->{widgets}->{server_log_scrollbox}, TRUE, FALSE);
 	$self->{widgets}->{content_vbox}->add($self->{widgets}->{main_pane});
-	
+
 	# CS
 	$self->{widgets}->{cs_entry_label }= Gtk2::Label->new_with_mnemonic("_Execute:");
 
@@ -504,7 +504,7 @@ sub init_gui() {
 
 	# Main vbox
 	$self->{widgets}->{top_vbox}->add($self->{widgets}->{main_window_hbox});
-	
+
 	# Start shit out useless
 	$self->{widgets}->{dis_btn}->set_sensitive(FALSE);
 	$self->{widgets}->{cs_btn}->set_sensitive(FALSE);
@@ -519,8 +519,8 @@ sub init_gui() {
 			'Restart Match',	# done
 			'Next Map',		# done
 			'Change Password',	# done
-			'Reload Settings',	# done	
-			'ReRegister in Lobby',	# done	
+			'Reload Settings',	# done
+			'ReRegister in Lobby',	# done
 		],
 		'Mapping' => [
 			'Pick new map',		# done
@@ -558,9 +558,9 @@ sub init_gui() {
 	$self->{widgets}->{presets_frame}->add($self->{widgets}->{presets_vbox});
 	$self->{widgets}->{presets_btn}->set_sensitive(FALSE);
 	$self->{widgets}->{presets_tv}->set_sensitive(FALSE);
-	
+
 	# Show shit
-	$self->{widgets}->{$_}->show_all()  foreach (qw(side_vbox top_vbox content_vbox)); 
+	$self->{widgets}->{$_}->show_all()  foreach (qw(side_vbox top_vbox content_vbox));
 	$self->{widgets}->{$_}->show_all()  foreach (qw(main_window_hbox conn_hbox cs_box));
 
 	# Callbacks..
@@ -598,9 +598,9 @@ sub init_gui() {
 			},
 			$self
 		);
-		
+
 	});
-	
+
 	$self->{widgets}->{conn_addr_txt}->signal_connect('key_press_event' => sub {
 		if ($_[1]->keyval == Gtk2::Gdk->keyval_from_name('Return')) {
 			$self->{widgets}->{conn_btn}->clicked;
@@ -627,7 +627,7 @@ sub init_gui() {
 		my ($widget, $event) = @_;
 		$self->player_rl_callback($widget, $event);
 	});
-	
+
 	$self->{widgets}->{cs_btn}->signal_connect (clicked => sub{$self->cmd_send_callback();});
 
 	# Start disconnect button off as hidden
@@ -889,7 +889,7 @@ sub cmd_send_callback {
 	unless ($cmd =~ m/^[\/|@]/) {
 		$cmd = "@[".$self->{prefs}->get('admin.name')."] $cmd";
 	}
-	
+
 	# Give it
 	$self->realsend($cmd."\n");
 }
@@ -905,7 +905,7 @@ sub player_rl_callback {
 	return FALSE unless $event->button == 3;
 	return FALSE unless $event->window == $self->{widgets}->{player_list}->get_bin_window;
 
-	# Get the fucking values. 
+	# Get the fucking values.
 	my ($x, $y) = $event->get_coords;
 	my $p = $self->{widgets}->{player_list}->get_path_at_pos($x, $y);
 
@@ -931,7 +931,7 @@ sub player_rl_callback {
 
 	# Team changing shit
 	my $t_menu = Gtk2::Menu->new();
-	foreach (($self->{stats}->{'game_mode'} eq 'CTF' || $self->{stats}->{'game_mode'} eq 'INF' || $self->{stats}->{'game_mode'} eq 'HTF') ? 
+	foreach (($self->{stats}->{'game_mode'} eq 'CTF' || $self->{stats}->{'game_mode'} eq 'INF' || $self->{stats}->{'game_mode'} eq 'HTF') ?
 			(1, 2, 5) : ($self->{stats}->{'game_mode'} eq 'TM' ?
 				(1..5) : (0, 5))) {
 		my $m_setteam = Gtk2::MenuItem->new($team_names[$_]);
@@ -1002,7 +1002,7 @@ sub player_mod {
 		$cmd = "/setteam$1 $pid";
 	}
 	else {
-		return; 
+		return;
 	}
 	$self->realsend($cmd."\n");
 }
@@ -1049,8 +1049,8 @@ sub add_bot {
 	# Attach them
 	$dialog->get_content_area()->add($label);
 	$dialog->get_content_area()->add($bot_entry);
-	
-	# Make pressing enter in the text field accept it 
+
+	# Make pressing enter in the text field accept it
 	$bot_entry->child->signal_connect('key_press_event' => sub {
 		$dialog->response('accept') if $_[1]->keyval == Gtk2::Gdk->keyval_from_name('Return');
 	});
@@ -1066,7 +1066,7 @@ sub add_bot {
 
 	# Fucking die
 	$dialog->destroy;
-	
+
 	# Attempt doing it if the user accepted somehow
 	if ($resp eq 'accept') {
 
@@ -1131,7 +1131,7 @@ sub reset_conn_form {
 	$self->{widgets}->{cs_btn}->set_sensitive(TRUE);
 	$self->{widgets}->{cs_entry}->set_sensitive(TRUE);
 	$self->{widgets}->{cs_entry}->set_editable(TRUE);
-	
+
 	# Preset shit
 	$self->{widgets}->{presets_btn}->set_sensitive(TRUE);
 	$self->{widgets}->{presets_tv}->set_sensitive(TRUE);
@@ -1140,13 +1140,13 @@ sub reset_conn_form {
 # Empty holders of info
 sub empty_gui {
 	my $self = shift;
-	
+
 	# Empty player list
 	splice @{$self->{widgets}->{player_list}->{data}};
-	
+
 	# And info table
 	$self->{widgets}->{info_texts}->{$_}->set_text('N/A') foreach (keys %{$self->{widgets}->{info_texts}});
-	
+
 	# And say we're outta
 	$self->console_add("[**] Disconnected...");
 
@@ -1157,9 +1157,9 @@ sub empty_gui {
 # Update holders of info
 sub update_gui {
 	my $self = shift;
-	
+
 	my $ip2c = IP::Country::Fast->new() if $self->{support_ip2c} == 1;
-	
+
 	# Kill contents
 	@{$self->{widgets}->{player_list}->{data}} = ();
 
@@ -1171,7 +1171,7 @@ sub update_gui {
 		my $ratio = 0;
 
 		if ($_->{'deaths'} == 0 && $_->{'kills'} > 0) {
-			$ratio = $_->{'kills'};	
+			$ratio = $_->{'kills'};
 		}
 		elsif ($_->{'deaths'} > 0 && $_->{'kills'} > 0) {
 			$ratio = $_->{'kills'} % $_->{'deaths'} == 0 ? $_->{'kills'} / $_->{'deaths'}
@@ -1180,7 +1180,7 @@ sub update_gui {
 
 		# Add player
 		push @{$self->{widgets}->{player_list}->{data}},
-			$self->{support_ip2c} ? 
+			$self->{support_ip2c} ?
 				[$_->{'ip'} eq 'Bot' ? 'N/A' : $ip2c->inet_atocc($_->{'ip'}),
 				$_->{'id'},
 				'<span color="'.$team_colors[$_->{'team'}].'">'.$team_names[$_->{'team'}].'</span>',
@@ -1198,9 +1198,9 @@ sub update_gui {
 					$ratio,
 					$_->{'ping'},
 					$_->{'ip'}];
-		
+
 	};
-	
+
 	# info table
 	$self->{widgets}->{info_texts}->{'map'}->set_text($self->{stats}->{'map'});
 	$self->{widgets}->{info_texts}->{'ver'}->set_text($self->{version});
@@ -1232,7 +1232,7 @@ sub console_add {
 	my ($self, $line) = @_;
 	my @time = localtime(time);
 	$self->{widgets}->{server_log_buff}->insert(
-		$self->{widgets}->{server_log_buff}->get_end_iter, 
+		$self->{widgets}->{server_log_buff}->get_end_iter,
 		sprintf("[%02d:%02d:%02d] %s\n", $time[2], $time[1], $time[0], $line)
 	);
 }
@@ -1275,7 +1275,7 @@ sub log_start {
 	1;
 }
 
-# Append line to log 
+# Append line to log
 sub log_add {
 	my ($self, $line) = @_;
 	return unless $self->{prefs}->get('logging.enable', 'int');
