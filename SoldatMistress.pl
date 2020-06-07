@@ -16,7 +16,7 @@
 # along with Soldat Mistress.  If not, see <http://www.gnu.org/licenses/>.
  
 
-# We're fucking perfectionists
+# We care about errors
 use warnings;
 use strict;
 use diagnostics;
@@ -28,7 +28,7 @@ use Gtk2::Gdk::Keysyms;
 my $notif_enable;
 BEGIN {
 	
-	# Kill stdout buffer so shit flies immediately
+	# Kill stdout buffer so text flies immediately
 	$| = 1;
 	
 	# Gtk2::Notify might not be bundled in, whereas the main 
@@ -45,15 +45,15 @@ BEGIN {
 # Get all pithy, er, pathy
 use File::Basename;
 
-# Path shit
+# Path stuff
 use lib dirname(__FILE__).'/lib/';
 my $here = dirname($0);
 chdir $here unless $here eq '.';
 
-# paranoid motha fuckas we are
+# As we save passwords in plain text, lock down perms
 umask(0077);
 
-# Our local folder for fun shit
+# Our local folder for fun files
 my $home_dir_folder = $ENV{$^O eq 'MSWin32' ? 'APPDATA' : 'HOME'}.'/.soldatmistress/';
 my $home_dir_ok = 1;
 unless (-d $home_dir_folder) {
@@ -67,7 +67,7 @@ use Server;
 use Prefs;
 use Favorites;
 
-# Start the main gui shit
+# Start the main gui work
 my $server_window = new Gtk2::Window("toplevel");
 my $window_vbox = Gtk2::VBox->new;
 my $al = Gtk2::Alignment->new(0, 0, 0, 0);
@@ -283,7 +283,7 @@ $con_btn->signal_connect('button-press-event' => sub {
 						host => $host, 
 						port => $port,
 						pw => $pw
-					}) || $nervs[$n]->gui_notif('Oh Fuck!', 'Couldn\'t connect');
+					}) || $nervs[$n]->gui_notif('oh no!', 'Couldn\'t connect');
 					0;
 				}, [$n, $host, $port, $pw]);
 			}, [$_->{host}, $_->{port}, $_->{pw}]);

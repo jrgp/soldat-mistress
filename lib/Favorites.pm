@@ -18,7 +18,7 @@ package Favorites;
 use warnings;
 use strict;
 
-# Constructor, bitches
+# Constructor
 sub new {
 	my ($class, $filename) = @_;
 	my $self = {};

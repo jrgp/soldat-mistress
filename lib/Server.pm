@@ -27,7 +27,7 @@ use Gtk2::Gdk::Keysyms;
 use Glib qw(TRUE FALSE);
 use Pango;
 
-# Random bullshit
+# Indexed items
 our @team_names = qw(None Alpha Bravo Charlie Delta Spectator);
 our @team_colors = qw(black red blue green yellow purple);
 our @mode_names = qw(DM PM TM CTF RM INF HTF);
@@ -118,13 +118,13 @@ sub end_socket {
 	}
 }
 
-# try reconnecting if the shit sucks
+# try reconnecting if the server closed
 sub try_reconnect {
 	my $self = shift;
 	return unless defined $self->check_connected;
 	return unless defined $self->{settings};
 	if ($self->connect($self->{settings})) {
-		$self->console_add("[**] Automagically reconnected successfully...");
+		$self->console_add("[**] Automatically reconnected successfully...");
 		return 0;
 	}
 	else {
@@ -174,11 +174,11 @@ sub watch_callback {
 				$self->realsend($vers);
 			}
 
-			# other shit
+			# other stuff
 			if ($self->{s_line} eq "Invalid password.\r") {
 				$self->console_add("[**] Bad Password...");
 				$self->end_socket();
-				$self->gui_notif('Oh Fuck!', 'Bad Password');
+				$self->gui_notif('oh no!', 'Bad Password');
 				$self->{s_line} = "";
 				return 1;
 			}
@@ -356,7 +356,7 @@ sub kill_us {
 	$self->end_socket();
 }
 
-# Start base widgets and pack shit
+# Start base widgets and pack stuff
 sub init_gui() {
 	my $self = shift;
 
@@ -380,7 +380,7 @@ sub init_gui() {
 	$self->{widgets}->{conn_addr_label} = Gtk2::Label->new_with_mnemonic('_Host: ');
 	$self->{widgets}->{conn_port_label} = Gtk2::Label->new_with_mnemonic('Port: ');
 
-	# Set shit
+	# Set stuff
 	$self->{widgets}->{conn_pw_txt}->set_visibility(FALSE);
 	$self->{widgets}->{conn_port_txt}->set_max_length(6);
 	$self->{widgets}->{conn_port_txt}->set_width_chars(6);
@@ -393,7 +393,7 @@ sub init_gui() {
 	$self->{widgets}->{conn_al} = Gtk2::Alignment->new(0, 0, 0, 0);
 	$self->{widgets}->{info_texts} = {};
 
-	# Get shit packed accordingly
+	# Get stuff packed accordingly
 	$self->{widgets}->{top_vbox}->pack_start($self->{widgets}->{conn_frame}, FALSE, FALSE, 0);
 	$self->{widgets}->{main_window_hbox}->add($self->{widgets}->{content_vbox});
 	$self->{widgets}->{conn_hbox}->add($self->{widgets}->{$_}) foreach(qw(conn_addr_label conn_addr_txt conn_port_label
@@ -505,7 +505,7 @@ sub init_gui() {
 	# Main vbox
 	$self->{widgets}->{top_vbox}->add($self->{widgets}->{main_window_hbox});
 
-	# Start shit out useless
+	# Start stuff out useless
 	$self->{widgets}->{dis_btn}->set_sensitive(FALSE);
 	$self->{widgets}->{cs_btn}->set_sensitive(FALSE);
 	$self->{widgets}->{cs_entry}->set_sensitive(FALSE);
@@ -559,7 +559,7 @@ sub init_gui() {
 	$self->{widgets}->{presets_btn}->set_sensitive(FALSE);
 	$self->{widgets}->{presets_tv}->set_sensitive(FALSE);
 
-	# Show shit
+	# Show stuff
 	$self->{widgets}->{$_}->show_all()  foreach (qw(side_vbox top_vbox content_vbox));
 	$self->{widgets}->{$_}->show_all()  foreach (qw(main_window_hbox conn_hbox cs_box));
 
@@ -572,15 +572,15 @@ sub init_gui() {
 		$addr =~ s/^\s+|\s+$//g;
 		$pass =~ s/^\s+|\s+$//g;
 		if ($addr eq '') {
-			$self->gui_notif("Oh Fuck!", "You didn't fill in the address");
+			$self->gui_notif("oh no!", "You didn't fill in the address");
 			return;
 		}
 		unless ($port =~ m/^\d+$/ && $port > 0 && $port < 65535) {
-			$self->gui_notif("Oh Fuck!", 'You gave me an invalid port.');
+			$self->gui_notif("oh no!", 'You gave me an invalid port.');
 			return;
 		}
 		if ($pass eq '') {
-			$self->gui_notif("Oh Fuck!", "You didn't fill in the password");
+			$self->gui_notif("oh no!", "You didn't fill in the password");
 			return;
 		}
 
@@ -592,7 +592,7 @@ sub init_gui() {
 					port => $port,
 					pw => $pass
 				}) == 0) {
-					$self->gui_notif("Oh Fuck!", "Couldn't connect");
+					$self->gui_notif("oh no!", "Couldn't connect");
 				}
 				0;
 			},
@@ -861,7 +861,7 @@ sub change_gamemode {
 sub cmd_send_callback {
 	my $self = shift;
 
-	# If we aren't connected, fuck it
+	# If we aren't connected, ignore
 	return FALSE unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
 
 	# Text entry
@@ -870,18 +870,16 @@ sub cmd_send_callback {
 	# Empty field for next time around
 	$self->{widgets}->{cs_entry}->set_text('');
 
-	# Trim shit
 	$cmd =~ s/^\s+|\s+$//g;
 
-	# Bullshitting me?
 	if ($cmd eq '') {
-		$self->gui_notif("Oh Fuck!", "Comon man, gimme some shit to execute!");
+		$self->gui_notif("oh no!", "Comon man, gimme some stuff to execute!");
 		return;
 	}
 
-	# Getting pissy?
+	# Don't allow bad stuff or sending refresh as we do that
 	if ($cmd =~ m/^(SHUTDOWN|REFRESHX?)$/i) {
-		$self->gui_notif("Oh Fuck!", "Not letting you fuck shit up, sorry.");
+		$self->gui_notif("oh no!", "Ignoring action");
 		return;
 	}
 
@@ -905,11 +903,11 @@ sub player_rl_callback {
 	return FALSE unless $event->button == 3;
 	return FALSE unless $event->window == $self->{widgets}->{player_list}->get_bin_window;
 
-	# Get the fucking values.
+	# Get the values.
 	my ($x, $y) = $event->get_coords;
 	my $p = $self->{widgets}->{player_list}->get_path_at_pos($x, $y);
 
-	# If this isn't a player, offer to add a fucking bot
+	# If this isn't a player, offer to add a bot
 	unless ($p) {
 		my $menu = Gtk2::Menu->new();
 		my $m_addbot = Gtk2::ImageMenuItem->new("Add a bot?");
@@ -921,7 +919,7 @@ sub player_rl_callback {
 		return;
 	}
 
-	# It is a player; start gathering shit..
+	# It is a player; start gathering info..
 	my $pid = $self->{widgets}->{player_list}->{data}[$p->to_string][$self->{support_ip2c} ? 1 : 0];
 	my $pname = $self->{widgets}->{player_list}->{data}[$p->to_string][$self->{support_ip2c} ? 3 : 2];
 	my $pip = $self->{widgets}->{player_list}->{data}[$p->to_string][$self->{support_ip2c} ? 8 : 7];
@@ -929,7 +927,7 @@ sub player_rl_callback {
 	# Our main right click menu
 	my $menu = Gtk2::Menu->new();
 
-	# Team changing shit
+	# Team changing stuff
 	my $t_menu = Gtk2::Menu->new();
 	foreach (($self->{stats}->{'game_mode'} eq 'CTF' || $self->{stats}->{'game_mode'} eq 'INF' || $self->{stats}->{'game_mode'} eq 'HTF') ?
 			(1, 2, 5) : ($self->{stats}->{'game_mode'} eq 'TM' ?
@@ -945,7 +943,6 @@ sub player_rl_callback {
 	$t_menu_item->set_submenu($t_menu);
 	$menu->append($t_menu_item);
 
-	# The cute fucking items
 	my $m_kick = Gtk2::ImageMenuItem->new("Kick `$pname'");
 	$m_kick->signal_connect('activate' => sub{$self->player_mod('kick', $pid, $pname, $pip);});
 	$m_kick->set_image(Gtk2::Image->new_from_file('gfx/kick.png'));
@@ -974,7 +971,6 @@ sub player_rl_callback {
 	# Shove the menu where it goes
 	$menu->popup(undef, undef, undef, undef, $event->button, $event->time);
 
-	# Display the fucker once and for all
 	$menu->show_all;
 }
 
@@ -1058,28 +1054,27 @@ sub add_bot {
 	# Show it
 	$dialog->show_all;
 
-	# Wait for the shit to go down
+	# Wait for the it to work
 	my $resp = $dialog->run();
 
 	# Get the text after it goes down
 	my $bot_txt = $bot_entry->child->get_text();
 
-	# Fucking die
+	# close window
 	$dialog->destroy;
 
 	# Attempt doing it if the user accepted somehow
 	if ($resp eq 'accept') {
 
-		# Trim shit
 		$bot_txt =~ s/^\s+|\s+$//g;
 
-		# Fucker
+		# Ignore empty
 		return if $bot_txt eq '';
 
 		# I really hope we're connected
 		return unless $self->{sock} != 0 && defined $self->{sock} && $self->{sock}->connected;
 
-		# We are, send that fucking bot to hell!!!!!!!!!!!!
+		# We are, add the bot!!!!!!!!!!!!
 		$self->realsend("/addbot $bot_txt\n");
 	}
 }
@@ -1132,7 +1127,7 @@ sub reset_conn_form {
 	$self->{widgets}->{cs_entry}->set_sensitive(TRUE);
 	$self->{widgets}->{cs_entry}->set_editable(TRUE);
 
-	# Preset shit
+	# Preset buttons
 	$self->{widgets}->{presets_btn}->set_sensitive(TRUE);
 	$self->{widgets}->{presets_tv}->set_sensitive(TRUE);
 }

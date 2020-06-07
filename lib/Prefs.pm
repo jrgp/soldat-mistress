@@ -23,7 +23,7 @@ use Gtk2::SimpleList;
 use Gtk2::Gdk::Keysyms;
 use Glib qw(TRUE FALSE);
 
-# Constructor, bitches - start class, localize shit, set default settings
+# Constructor - start class, localize stuff, set default settings
 sub new {
 	my ($class, $filename, $main_window) = @_;
 	my $self = {};
@@ -152,11 +152,11 @@ sub show_dialog {
 	$self->end_window;
 }
 
-# Deal with either closing the window naturally or forcing the bitch to fucking die
+# Deal with either closing the window naturally or forcing the window to close
 sub end_window {
 	my $self = shift;
 	
-	# Window closed; do shit:
+	# Window closed; do stuff:
 	$self->{favs}->save;
 	$self->save_settings_page;
 	$self->save;
@@ -335,15 +335,15 @@ sub get_favs_page {
 		$a_port =~ s/^\s+|\s+$//g;
 		$a_pw =~ s/^\s+|\s+$//g;
 		if ($a_host eq '') {
-			$self->gui_notif("Oh Fuck!", "You didn't fill in the address");
+			$self->gui_notif("Oh no!", "You didn't fill in the address");
 			return;
 		}
 		unless ($a_port =~ m/^\d+$/ && $a_port > 0 && $a_port < 65535) {
-			$self->gui_notif("Oh Fuck!", 'You gave me an invalid port.');
+			$self->gui_notif("Oh no!", 'You gave me an invalid port.');
 			return;
 		}
 		if ($a_pw eq '') {
-			$self->gui_notif("Oh Fuck!", "You didn't fill in the password");
+			$self->gui_notif("Oh no!", "You didn't fill in the password");
 			return;
 		}
 		$fav_add_host->set_text('');
@@ -375,7 +375,6 @@ sub get_about_page {
 	$vbox;
 }
 
-# bitch and moan, like the little cunt you are
 sub gui_notif {
 	my ($self, $title, $msg) = @_;
 	my $dialog =  Gtk2::Dialog->new(
